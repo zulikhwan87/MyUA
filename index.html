@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b4429">
+<meta name="description" content="MyUA — Sistem rekod hafazan al-Quran untuk kelas: urus pelajar, analisis kelas & individu, jana laporan PDF.">
+<title>MyUA — Sistem Rekod Hafazan Kelas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230e6b3d'/%3E%3Cpath d='M50 26c-7-6-17-6-24-4v46c7-2 17-2 24 4 7-6 17-6 24-4V22c-7-2-17-2-24 4z' fill='none' stroke='%239fd356' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M50 30v42' stroke='%239fd356' stroke-width='4'/%3E%3C/svg%3E">
+<style>
+/* ============ RESET & TOKENS ============ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --g-dark:#0b4429; --g:#0e6b3d; --g-mid:#12844b; --g-soft:#e8f3ec;
+  --lime:#9fd356; --lime-2:#b6e072; --lime-ink:#1c3c11;
+  --gold:#f6b32b; --gold-soft:#fff3d6;
+  --bg:#eef2f0; --card:#ffffff;
+  --ink:#132a1f; --ink-2:#4b6357; --ink-3:#93a89c; --line:#e4ebe7;
+  --danger:#e5484d; --danger-soft:#fdecec;
+  --c-talaqqi:#0d9488; --c-hafazan:#0e7a43; --c-murajaah:#ef8f1c; --c-tasmik:#5b54d6; --c-tahriri:#dc2f6e;
+  --r-sm:11px; --r:16px; --r-lg:22px; --r-pill:999px;
+  --sh-sm:0 2px 8px rgba(9,45,28,.06); --sh:0 8px 24px rgba(9,45,28,.09); --sh-lg:0 16px 44px rgba(9,45,28,.16);
+  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  color:var(--ink); background:#093822; line-height:1.45;
+  background-image:
+    radial-gradient(1200px 500px at 50% -10%, #145536 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 4l7 19 19 7-19 7-7 19-7-19L4 30l19-7z' fill='none' stroke='%23ffffff' stroke-opacity='0.03' stroke-width='1'/%3E%3C/svg%3E");
+  min-height:100dvh;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:16px;outline:none;border:none;background:none;color:inherit}
+::selection{background:var(--lime);color:var(--lime-ink)}
+:focus-visible{outline:3px solid var(--lime);outline-offset:2px;border-radius:6px}
+
+/* ============ APP SHELL ============ */
+.app{
+  width:100%; max-width:440px; margin:0 auto; background:var(--bg);
+  display:flex; flex-direction:column; position:relative; min-height:100dvh; overflow:hidden;
+}
+@media (min-width:600px){
+  body{display:flex;align-items:center;justify-content:center;padding:22px 12px}
+  .app{min-height:auto;height:min(924px,calc(100dvh - 44px));border-radius:36px;box-shadow:0 34px 90px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.05)}
+}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
+.screen{display:none;animation:fade .35s ease;padding-bottom:34px}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* ============ HERO (green header card) ============ */
+.hero{
+  background:linear-gradient(150deg,var(--g-mid) 0%,var(--g) 42%,var(--g-dark) 100%);
+  color:#fff; padding:calc(var(--safe-top) + 18px) 17px 20px; position:relative; overflow:hidden;
+  border-radius:0 0 26px 26px;
+}
+.hero.flat{border-radius:0}
+.hero::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cpath d='M22 2l6 14 14 6-14 6-6 14-6-14L2 22l14-6z' fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='1'/%3E%3C/svg%3E");
+}
+.hero > *{position:relative;z-index:1}
+.hero-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.hero-back{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center}
+.hero-title{font-size:15px;font-weight:800;letter-spacing:.5px}
+.brandrow{display:flex;align-items:center;gap:9px}
+.brand-emblem{width:34px;height:34px;flex:none}
+.brand-name{font-size:24px;font-weight:900;letter-spacing:.6px;line-height:1}
+.brand-name .go{color:var(--lime-2)}
+.brand-tag{font-size:10.5px;opacity:.82;font-weight:600;letter-spacing:.3px}
+
+/* greeting card */
+.greet{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:14px}
+.greet-hi{font-size:12.5px;opacity:.85;font-weight:600}
+.greet-name{font-size:20px;font-weight:900;letter-spacing:.3px;margin-top:1px}
+.greet-sub{font-size:11.5px;opacity:.85;margin-top:5px;display:flex;gap:12px;flex-wrap:wrap}
+.greet-sub b{font-weight:700}
+.avatar{width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-weight:900;font-size:17px;flex:none;border:1.5px solid rgba(255,255,255,.25)}
+.mata{background:linear-gradient(135deg,var(--lime-2),var(--lime));color:var(--lime-ink);border-radius:15px;padding:8px 12px;text-align:center;flex:none;box-shadow:0 6px 16px rgba(0,0,0,.18);min-width:60px}
+.mata .lbl{font-size:9.5px;font-weight:800;letter-spacing:1px;opacity:.75}
+.mata .val{font-size:22px;font-weight:900;line-height:1;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px}
+.mata .val svg{width:14px;height:14px}
+
+/* ============ GENERIC ============ */
+.pad{padding:0 15px}
+.section{margin-top:18px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px}
+.sec-title{font-size:13.5px;font-weight:900;letter-spacing:.4px;color:var(--ink);display:flex;align-items:center;gap:7px}
+.sec-title .ic{width:19px;height:19px;color:var(--g)}
+.link{font-size:12px;font-weight:800;color:var(--g);display:flex;align-items:center;gap:2px}
+.card{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line)}
+.card.p{padding:15px}
+
+/* mini stat row */
+.mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.mini{background:var(--card);border-radius:var(--r);padding:11px 10px;box-shadow:var(--sh-sm);border:1px solid var(--line);position:relative;overflow:hidden}
+.mini .mi-ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;margin-bottom:7px}
+.mini .mi-ic svg{width:15px;height:15px}
+.mini .mi-v{font-size:19px;font-weight:900;line-height:1}
+.mini .mi-l{font-size:10px;font-weight:700;color:var(--ink-3);margin-top:3px;line-height:1.25}
+
+/* prestasi bar */
+.prestasi{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:14px 15px;margin-top:14px;display:flex;align-items:center;gap:14px}
+.ring{--p:0;width:60px;height:60px;flex:none;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--g) calc(var(--p)*1%), #e8efec 0);}
+.ring .inner{width:46px;height:46px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:14px;font-weight:900;color:var(--g)}
+.prestasi .pr-t{font-size:13px;font-weight:900}
+.prestasi .pr-s{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.pr-tag{display:inline-block;margin-top:6px;font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:var(--r-pill);background:var(--gold-soft);color:#8a5a00}
+
+/* ============ PHASE CARDS ============ */
+.phase{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:13px;margin-bottom:11px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden}
+.phase::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--ac,var(--g))}
+.ph-ic{width:44px;height:44px;border-radius:13px;flex:none;display:grid;place-items:center;color:#fff;background:var(--ac,var(--g));box-shadow:0 5px 14px color-mix(in srgb,var(--ac,var(--g)) 40%, transparent)}
+.ph-ic svg{width:23px;height:23px}
+.ph-body{flex:1;min-width:0}
+.ph-num{position:absolute;top:11px;right:12px;font-size:11px;font-weight:900;color:var(--ink-3);background:var(--bg);width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
+.ph-title{font-size:14.5px;font-weight:900;display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding-right:26px}
+.ph-desc{font-size:11.8px;color:var(--ink-2);margin-top:4px;line-height:1.4}
+.ph-foot{display:flex;align-items:center;gap:9px;margin-top:11px}
+.pts{font-size:11px;font-weight:900;color:var(--g);background:var(--g-soft);padding:4px 10px;border-radius:var(--r-pill);display:inline-flex;align-items:center;gap:4px}
+.pts svg{width:12px;height:12px}
+.badge-new{font-size:9px;font-weight:900;letter-spacing:.5px;color:#fff;background:linear-gradient(135deg,var(--c-tahriri),#a3205a);padding:2px 7px;border-radius:var(--r-pill)}
+.ph-btn{margin-left:auto;font-size:11.5px;font-weight:900;color:#fff;background:var(--ac,var(--g));padding:7px 14px;border-radius:var(--r-pill);display:inline-flex;align-items:center;gap:5px;box-shadow:0 5px 13px color-mix(in srgb,var(--ac,var(--g)) 38%, transparent)}
+.ph-btn svg{width:13px;height:13px}
+.ph-btn:active{transform:scale(.96)}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:900;font-size:14px;border-radius:14px;padding:14px 18px;transition:transform .12s,box-shadow .2s;letter-spacing:.3px}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:linear-gradient(135deg,var(--g-mid),var(--g));color:#fff;box-shadow:0 10px 24px rgba(14,107,61,.32)}
+.btn-gold{background:linear-gradient(135deg,#ffcf5e,var(--gold));color:#5a3d00;box-shadow:0 10px 24px rgba(246,179,43,.34)}
+.btn-lime{background:linear-gradient(135deg,var(--lime-2),var(--lime));color:var(--lime-ink);box-shadow:0 10px 24px rgba(159,211,86,.34)}
+.btn-ghost{background:var(--g-soft);color:var(--g)}
+.btn-line{background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
+.btn-danger{background:var(--danger-soft);color:var(--danger)}
+.btn-block{display:flex;width:100%}
+.btn svg{width:18px;height:18px}
+.btn.sm{padding:10px 14px;font-size:12.5px;border-radius:11px}
+
+/* ============ FORM / FIELDS ============ */
+.field{margin-bottom:13px}
+.field-lbl{font-size:11px;font-weight:900;letter-spacing:.6px;color:var(--ink-2);text-transform:uppercase;margin:0 2px 7px;display:flex;align-items:center;gap:6px}
+.field-lbl svg{width:14px;height:14px;color:var(--g)}
+.input{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:13px;padding:14px 14px;font-size:16px;font-weight:600;transition:border-color .2s,background .2s}
+.input::placeholder{color:var(--ink-3);font-weight:500}
+.input:focus{border-color:var(--g);background:var(--card)}
+textarea.input{resize:none;min-height:64px;line-height:1.5}
+.auto-2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.auto-box{background:var(--g-soft);border:1.5px solid #d3e6da;border-radius:13px;padding:11px 13px}
+.auto-box .a-l{font-size:9.5px;font-weight:900;letter-spacing:.8px;color:var(--g);text-transform:uppercase}
+.auto-box .a-v{font-size:15px;font-weight:900;color:var(--g-dark);margin-top:3px;min-height:19px;line-height:1.2}
+.auto-box.dim .a-v{color:var(--ink-3);font-weight:700}
+.select{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:11px 34px 11px 13px;font-size:13.5px;font-weight:800;color:var(--ink);appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%234b6357' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+
+/* fasa chips */
+.fasa-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.fasa{background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:11px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .18s;position:relative}
+.fasa .f-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;background:var(--ac);transition:transform .18s}
+.fasa .f-ic svg{width:20px;height:20px}
+.fasa .f-l{font-size:9.5px;font-weight:800;color:var(--ink-2);text-align:center;line-height:1.15}
+.fasa .f-dot{position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;background:var(--g);display:none;place-items:center;color:#fff}
+.fasa .f-dot svg{width:11px;height:11px}
+.fasa.sel{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 10%, #fff);box-shadow:0 6px 16px color-mix(in srgb,var(--ac) 24%, transparent)}
+.fasa.sel .f-ic{transform:scale(1.06)}
+.fasa.sel .f-l{color:var(--ink);font-weight:900}
+.fasa.sel .f-dot{display:grid;background:var(--ac)}
+.fasa.sel .f-badge{display:none}
+.f-badge{position:absolute;top:-6px;right:-3px;font-size:7.5px;font-weight:900;color:#fff;background:var(--c-tahriri);padding:1px 5px;border-radius:var(--r-pill);letter-spacing:.3px}
+
+/* segmented */
+.seg{display:flex;background:#dfe7e3;border-radius:14px;padding:4px;margin:0 15px 14px;gap:4px}
+.seg button{flex:1;padding:10px;border-radius:11px;font-size:13px;font-weight:900;color:var(--ink-2);transition:all .2s}
+.seg button.on{background:var(--card);color:var(--g);box-shadow:var(--sh-sm)}
+.seg-view{display:none}
+.seg-view.on{display:block;animation:fade .3s}
+
+/* filters */
+.filter-row{display:flex;gap:9px;margin-bottom:13px}
+.filter-row .select{flex:1}
+
+/* record item */
+.rec{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:12px 13px;margin-bottom:9px;display:flex;align-items:center;gap:11px}
+.rec-n{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:13px;font-weight:900;color:#fff;background:var(--ac,var(--g))}
+.rec-mid{flex:1;min-width:0}
+.rec-top{display:flex;align-items:center;gap:7px}
+.rec-phase{font-size:13.5px;font-weight:900}
+.rec-tag{font-size:9px;font-weight:800;color:var(--ac,var(--g));background:color-mix(in srgb,var(--ac,var(--g)) 12%,#fff);padding:1px 7px;border-radius:var(--r-pill)}
+.rec-ms{font-size:11.5px;color:var(--ink-2);margin-top:2px;font-weight:600}
+.rec-ms b{color:var(--ink);font-weight:800}
+.rec-dt{font-size:10.5px;color:var(--ink-3);margin-top:2px;display:flex;gap:8px;align-items:center}
+.rec-dt svg{width:11px;height:11px;vertical-align:-1px}
+.rec-r{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none}
+.rec-pts{font-size:11.5px;font-weight:900;color:var(--g);background:var(--g-soft);padding:5px 9px;border-radius:var(--r-pill);white-space:nowrap}
+.rec-acts{display:flex;gap:5px}
+.icon-btn{width:28px;height:28px;border-radius:9px;background:var(--bg);display:grid;place-items:center;color:var(--ink-2)}
+.icon-btn svg{width:14px;height:14px}
+.icon-btn.del{color:var(--danger);background:var(--danger-soft)}
+.icon-btn:active{transform:scale(.9)}
+
+/* empty */
+.empty{text-align:center;padding:40px 24px;color:var(--ink-3)}
+.empty .e-ic{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:var(--g-soft);display:grid;place-items:center;color:var(--g)}
+.empty .e-ic svg{width:32px;height:32px}
+.empty .e-t{font-size:14px;font-weight:900;color:var(--ink)}
+.empty .e-s{font-size:12px;margin-top:5px;line-height:1.5}
+
+/* ============ ANALISIS ============ */
+.tabs{display:flex;background:#dfe7e3;border-radius:14px;padding:4px;gap:4px;margin-bottom:15px}
+.tabs button{flex:1;padding:9px;border-radius:11px;font-size:12.5px;font-weight:900;color:var(--ink-2);transition:all .2s}
+.tabs button.on{background:var(--g);color:#fff;box-shadow:0 4px 12px rgba(14,107,61,.28)}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px}
+.stat{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:14px}
+.stat .s-ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;margin-bottom:9px}
+.stat .s-ic svg{width:17px;height:17px}
+.stat .s-v{font-size:24px;font-weight:900;line-height:1;display:flex;align-items:baseline;gap:4px}
+.stat .s-v small{font-size:12px;font-weight:800;color:var(--ink-3)}
+.stat .s-l{font-size:11px;font-weight:700;color:var(--ink-2);margin-top:5px}
+.chart-card{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:15px;margin-bottom:15px}
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.chart-head .c-t{font-size:13px;font-weight:900}
+.chart-head .c-legend{font-size:10.5px;font-weight:800;color:var(--g);display:flex;align-items:center;gap:5px}
+.chart-head .c-legend::before{content:"";width:9px;height:9px;border-radius:3px;background:var(--g)}
+.chart-wrap{width:100%;overflow:hidden}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.brk{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:15px}
+.brk-item{margin-bottom:13px}
+.brk-item:last-child{margin-bottom:0}
+.brk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.brk-name{font-size:12px;font-weight:800;display:flex;align-items:center;gap:7px}
+.brk-name .d{width:10px;height:10px;border-radius:3px;background:var(--ac)}
+.brk-val{font-size:11.5px;font-weight:900;color:var(--ink-2)}
+.brk-bar{height:8px;border-radius:var(--r-pill);background:var(--bg);overflow:hidden}
+.brk-fill{height:100%;border-radius:var(--r-pill);background:var(--ac);transition:width .6s ease}
+
+/* ============ PROFIL ============ */
+.prof-hero{display:flex;flex-direction:column;align-items:center;color:#fff;padding-top:6px}
+.prof-av{width:76px;height:76px;border-radius:24px;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.3);display:grid;place-items:center;font-size:28px;font-weight:900;margin-bottom:10px}
+.prof-name{font-size:19px;font-weight:900}
+.prof-sub{font-size:12px;opacity:.85;margin-top:4px}
+.prof-stats{display:flex;gap:9px;margin-top:16px;width:100%}
+.pstat{flex:1;background:rgba(255,255,255,.13);border-radius:14px;padding:11px 8px;text-align:center;backdrop-filter:blur(4px)}
+.pstat .v{font-size:19px;font-weight:900}
+.pstat .l{font-size:9.5px;opacity:.85;font-weight:700;margin-top:2px}
+.list-card{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:14px 15px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row-ic{width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--g-soft);color:var(--g)}
+.row-ic svg{width:19px;height:19px}
+.row-body{flex:1;min-width:0}
+.row-t{font-size:13.5px;font-weight:800}
+.row-s{font-size:11px;color:var(--ink-3);margin-top:2px}
+.row-r{display:flex;align-items:center;gap:8px;flex:none}
+.row .input{max-width:120px;padding:9px 11px;font-size:14px;text-align:right}
+.row .num{max-width:66px;text-align:center}
+.chev{color:var(--ink-3)}
+.chev svg{width:18px;height:18px}
+.pts-edit{display:flex;align-items:center;gap:6px}
+.pts-edit .num{width:56px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:8px;text-align:center;font-weight:900;font-size:14px}
+
+/* ============ BOTTOM NAV ============ */
+.nav{display:flex;align-items:flex-end;justify-content:space-around;background:var(--card);border-top:1px solid var(--line);padding:8px 6px calc(8px + var(--safe-bot));position:relative;box-shadow:0 -6px 22px rgba(9,45,28,.06);flex:none}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 8px;color:var(--ink-3);min-width:56px;transition:color .2s}
+.nav-item svg{width:22px;height:22px}
+.nav-item .nl{font-size:10px;font-weight:800;letter-spacing:.2px}
+.nav-item.on{color:var(--g)}
+.nav-item.on svg{transform:translateY(-1px)}
+.nav-scan{flex:none;margin:0 2px;transform:translateY(-16px)}
+.nav-scan .fab{width:58px;height:58px;border-radius:19px;background:linear-gradient(140deg,var(--g-mid),var(--g-dark));display:grid;place-items:center;color:#fff;box-shadow:0 10px 26px rgba(14,107,61,.44);border:3px solid var(--card);transition:transform .15s}
+.nav-scan .fab svg{width:26px;height:26px}
+.nav-scan:active .fab{transform:scale(.93)}
+.nav-scan .sl{font-size:9.5px;font-weight:900;color:var(--g);text-align:center;margin-top:4px}
+
+/* ============ SCAN OVERLAY ============ */
+.overlay{position:absolute;inset:0;z-index:60;background:rgba(6,32,20,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end}
+.overlay.on{display:flex;animation:fade .25s}
+.sheet{width:100%;background:var(--bg);border-radius:26px 26px 0 0;padding:8px 15px calc(20px + var(--safe-bot));max-height:88%;overflow-y:auto;animation:up .3s cubic-bezier(.2,.8,.25,1)}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.grip{width:42px;height:5px;border-radius:99px;background:#c8d5cf;margin:6px auto 12px}
+.sheet-title{font-size:16px;font-weight:900;text-align:center;margin-bottom:3px}
+.sheet-sub{font-size:11.5px;color:var(--ink-2);text-align:center;margin-bottom:14px}
+.scan-view{background:#08281a;border-radius:20px;aspect-ratio:1;position:relative;overflow:hidden;display:grid;place-items:center;margin-bottom:14px}
+.scan-view video{width:100%;height:100%;object-fit:cover}
+.scan-frame{position:absolute;inset:16%;border-radius:18px;box-shadow:0 0 0 3px var(--lime), 0 0 0 2000px rgba(8,40,26,.35)}
+.scan-frame::before,.scan-frame::after{content:"";position:absolute;width:26px;height:26px;border:3px solid var(--lime)}
+.scan-line{position:absolute;left:16%;right:16%;height:2px;background:var(--lime);box-shadow:0 0 12px var(--lime);animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:18%}50%{top:80%}}
+.scan-note{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#cfe8d5;font-size:11px;font-weight:700;z-index:2}
+.scan-fallback{padding:26px 18px;text-align:center;color:#bcd4c4}
+.scan-fallback svg{width:44px;height:44px;margin-bottom:10px;opacity:.7}
+
+/* ============ TOAST ============ */
+.toast-wrap{position:absolute;left:0;right:0;bottom:96px;z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 20px}
+.toast{background:#0c3d26;color:#fff;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:800;box-shadow:0 12px 30px rgba(0,0,0,.3);display:flex;align-items:center;gap:9px;animation:toastin .3s cubic-bezier(.2,.9,.3,1);max-width:100%}
+.toast.win{background:linear-gradient(135deg,var(--g-mid),var(--g-dark))}
+.toast .t-pts{background:var(--lime);color:var(--lime-ink);padding:3px 9px;border-radius:99px;font-weight:900;font-size:12px}
+.toast svg{width:18px;height:18px;flex:none}
+@keyframes toastin{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+.toast.out{animation:toastout .3s forwards}
+@keyframes toastout{to{opacity:0;transform:translateY(10px) scale(.96)}}
+
+/* points pop on save */
+.pop{position:absolute;left:50%;top:40%;transform:translateX(-50%);z-index:90;font-size:44px;font-weight:900;color:var(--gold);text-shadow:0 4px 20px rgba(0,0,0,.25);pointer-events:none;animation:pop 1s ease forwards;display:none}
+.pop.go{display:block}
+@keyframes pop{0%{opacity:0;transform:translateX(-50%) translateY(20px) scale(.6)}25%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.1)}75%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-40px) scale(.9)}}
+
+/* misc */
+.divider{height:1px;background:var(--line);margin:15px 0}
+.hint{font-size:11px;color:var(--ink-3);text-align:center;line-height:1.5;margin-top:12px;padding:0 6px}
+.foot-brand{text-align:center;padding:22px 20px 6px;color:var(--ink-3);font-size:10.5px}
+.foot-brand b{color:var(--g);font-weight:900}
+.bismillah{text-align:center;font-size:15px;color:rgba(255,255,255,.9);margin-top:12px;font-weight:600;direction:rtl}
+
+/* ============================================================
+   ============  TAMBAHAN: KELAS · LAPORAN · CETAK  ============
+   ============================================================ */
+
+/* ---- Pil penukar pelajar aktif (header rekod) ---- */
+.stud-switch{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:var(--r-pill);padding:6px 8px 6px 12px;margin-top:12px;width:100%}
+.stud-switch .sw-av{width:30px;height:30px;border-radius:10px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-weight:900;font-size:12px;flex:none}
+.stud-switch .sw-mid{flex:1;min-width:0}
+.stud-switch .sw-n{font-size:13.5px;font-weight:900;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stud-switch .sw-s{font-size:10px;opacity:.82;font-weight:700;margin-top:1px}
+.stud-switch .sw-btn{font-size:10.5px;font-weight:900;background:var(--lime);color:var(--lime-ink);border-radius:var(--r-pill);padding:6px 11px;display:inline-flex;align-items:center;gap:4px;flex:none}
+.stud-switch .sw-btn svg{width:12px;height:12px}
+
+/* ---- Kad statistik kelas (dashboard utama) ---- */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.kpi{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:13px 13px;position:relative;overflow:hidden}
+.kpi .k-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;margin-bottom:8px}
+.kpi .k-ic svg{width:16px;height:16px}
+.kpi .k-v{font-size:23px;font-weight:900;line-height:1;display:flex;align-items:baseline;gap:4px}
+.kpi .k-v small{font-size:11px;font-weight:800;color:var(--ink-3)}
+.kpi .k-l{font-size:10.5px;font-weight:700;color:var(--ink-2);margin-top:4px}
+
+/* ---- Kad pelajar (senarai) ---- */
+.stud-search{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:13px;padding:12px 14px;font-size:15px;font-weight:600;margin-bottom:13px;display:flex;align-items:center;gap:9px}
+.stud-search input{flex:1;background:none;border:none;font-weight:600}
+.stud-search svg{width:17px;height:17px;color:var(--ink-3);flex:none}
+.stud{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:11px 12px;margin-bottom:9px;display:flex;align-items:center;gap:11px;transition:transform .12s,box-shadow .2s;text-align:left;width:100%}
+.stud:active{transform:scale(.99)}
+.stud .st-rank{width:26px;height:26px;border-radius:8px;flex:none;display:grid;place-items:center;font-size:12px;font-weight:900;color:var(--ink-2);background:var(--bg)}
+.stud .st-rank.top1{background:linear-gradient(135deg,#ffd75e,var(--gold));color:#5a3d00}
+.stud .st-rank.top2{background:linear-gradient(135deg,#e3e8ee,#b9c4d0);color:#39424d}
+.stud .st-rank.top3{background:linear-gradient(135deg,#f0b98a,#cf8952);color:#4a2c10}
+.stud .st-av{width:38px;height:38px;border-radius:12px;flex:none;display:grid;place-items:center;font-size:14px;font-weight:900;color:#fff;background:var(--g)}
+.stud .st-mid{flex:1;min-width:0}
+.stud .st-n{font-size:14px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stud .st-meta{font-size:10.5px;color:var(--ink-2);margin-top:3px;font-weight:600;display:flex;gap:9px;flex-wrap:wrap}
+.stud .st-meta b{color:var(--ink);font-weight:800}
+.stud .st-r{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+.stud .st-mata{font-size:12px;font-weight:900;color:var(--g);background:var(--g-soft);padding:4px 9px;border-radius:var(--r-pill);white-space:nowrap}
+.stud .st-prog{width:58px;height:6px;border-radius:99px;background:var(--bg);overflow:hidden}
+.stud .st-prog i{display:block;height:100%;border-radius:99px;background:var(--g)}
+
+/* ---- Butang bar aksi ---- */
+.act-bar{display:flex;gap:9px;margin-bottom:14px}
+.act-bar .btn{flex:1}
+
+/* ---- Analisis kelas: bar ranking mendatar ---- */
+.rankrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.rankrow:last-child{border-bottom:none}
+.rankrow .rk-i{width:22px;font-size:12px;font-weight:900;color:var(--ink-3);text-align:center;flex:none}
+.rankrow .rk-n{width:96px;font-size:11.5px;font-weight:800;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rankrow .rk-bar{flex:1;height:16px;border-radius:99px;background:var(--bg);overflow:hidden;position:relative}
+.rankrow .rk-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--g-mid),var(--g));min-width:2px}
+.rankrow .rk-v{font-size:11px;font-weight:900;color:var(--g);width:52px;text-align:right;flex:none}
+
+/* ---- Toggle mod analisis ---- */
+.mode-toggle{display:flex;background:#dfe7e3;border-radius:14px;padding:4px;gap:4px;margin-bottom:14px}
+.mode-toggle button{flex:1;padding:10px;border-radius:11px;font-size:12.5px;font-weight:900;color:var(--ink-2);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.mode-toggle button svg{width:15px;height:15px}
+.mode-toggle button.on{background:var(--g);color:#fff;box-shadow:0 4px 12px rgba(14,107,61,.28)}
+
+/* pemilih pelajar dalam analisis individu */
+.picker{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 34px 12px 13px;font-size:14px;font-weight:800;color:var(--ink);appearance:none;margin-bottom:14px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%234b6357' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+/* ---- Skrin laporan ---- */
+.rep-opt{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:15px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start}
+.rep-opt .ro-ic{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center;color:#fff}
+.rep-opt .ro-ic svg{width:24px;height:24px}
+.rep-opt .ro-body{flex:1;min-width:0}
+.rep-opt .ro-t{font-size:14.5px;font-weight:900}
+.rep-opt .ro-d{font-size:11.5px;color:var(--ink-2);margin-top:4px;line-height:1.45}
+.rep-opt .ro-act{margin-top:11px;display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---- Modal (tambah/edit pelajar) ---- */
+.modal{position:absolute;inset:0;z-index:70;background:rgba(6,32,20,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end}
+.modal.on{display:flex;animation:fade .25s}
+.modal-card{width:100%;background:var(--bg);border-radius:26px 26px 0 0;padding:8px 17px calc(20px + var(--safe-bot));max-height:90%;overflow-y:auto;animation:up .3s cubic-bezier(.2,.8,.25,1)}
+.modal-title{font-size:16px;font-weight:900;text-align:center;margin:4px 0 2px}
+.modal-sub{font-size:11.5px;color:var(--ink-2);text-align:center;margin-bottom:15px}
+
+/* ---- KAWALAN CETAK / LAPORAN PDF ---- */
+#printRoot{display:none}
+.report{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:#132a1f;background:#fff}
+.rp-head{background:linear-gradient(135deg,#0e6b3d,#0b4429);color:#fff;padding:22px 26px;border-radius:0 0 14px 14px;display:flex;align-items:center;gap:16px}
+.rp-head .rp-logo{width:52px;height:52px;flex:none}
+.rp-head .rp-brand{font-size:26px;font-weight:900;letter-spacing:.5px;line-height:1}
+.rp-head .rp-brand .go{color:#b6e072}
+.rp-head .rp-tag{font-size:11px;opacity:.9;margin-top:3px;font-weight:600}
+.rp-head .rp-meta{margin-left:auto;text-align:right;font-size:11px;line-height:1.7;opacity:.95}
+.rp-body{padding:20px 26px 8px}
+.rp-title{font-size:19px;font-weight:900;color:#0b4429;margin-bottom:3px}
+.rp-titsub{font-size:12px;color:#4b6357;margin-bottom:16px}
+.rp-info{display:flex;flex-wrap:wrap;gap:8px 26px;background:#f2f7f4;border:1px solid #e0ebe4;border-radius:12px;padding:13px 16px;margin-bottom:18px}
+.rp-info div{font-size:12px;color:#4b6357}
+.rp-info b{color:#132a1f;font-weight:800}
+.rp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.rp-kpi{border:1px solid #e0ebe4;border-radius:12px;padding:13px;text-align:center}
+.rp-kpi .v{font-size:22px;font-weight:900;color:#0e6b3d}
+.rp-kpi .l{font-size:10px;color:#4b6357;margin-top:3px;font-weight:700}
+.rp-sec-t{font-size:14px;font-weight:900;color:#0b4429;margin:16px 0 10px;padding-bottom:6px;border-bottom:2px solid #0e6b3d;display:flex;align-items:center;gap:8px}
+table.rp-tbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:14px}
+table.rp-tbl th{background:#0e6b3d;color:#fff;font-weight:800;text-align:left;padding:8px 9px;font-size:10.5px;letter-spacing:.3px}
+table.rp-tbl th.c,table.rp-tbl td.c{text-align:center}
+table.rp-tbl th.r,table.rp-tbl td.r{text-align:right}
+table.rp-tbl td{padding:7px 9px;border-bottom:1px solid #e8efec}
+table.rp-tbl tr:nth-child(even) td{background:#f6faf8}
+table.rp-tbl tr.top td{font-weight:800}
+.rp-badge{display:inline-block;font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:99px;color:#fff}
+.rp-brk{margin-bottom:14px}
+.rp-brk-item{margin-bottom:9px}
+.rp-brk-top{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:4px}
+.rp-brk-bar{height:9px;border-radius:99px;background:#eef2f0;overflow:hidden}
+.rp-brk-fill{height:100%;border-radius:99px}
+.rp-note{font-size:10.5px;color:#93a89c;text-align:center;margin-top:8px;padding-top:12px;border-top:1px dashed #d7e2db;line-height:1.6}
+.rp-sign{display:flex;justify-content:space-between;gap:40px;margin-top:34px;padding:0 6px}
+.rp-sign div{flex:1;text-align:center;font-size:11px;color:#4b6357}
+.rp-sign .ln{border-top:1.5px solid #93a89c;margin-bottom:6px;padding-top:34px}
+.rp-chart-wrap{border:1px solid #e0ebe4;border-radius:12px;padding:12px;margin-bottom:16px}
+.rp-chart-wrap svg{width:100%;height:auto;display:block}
+
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff!important}
+  body{display:block!important;padding:0!important}
+  .app,#toasts,#pop,.overlay,.modal,.nav{display:none!important}
+  #printRoot{display:block!important}
+  .report{box-shadow:none}
+  .rp-head{border-radius:0}
+  .page-break{page-break-before:always}
+  table.rp-tbl tr{page-break-inside:avoid}
+  .rp-sec-t{page-break-after:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <div class="content" id="content">
+
+    <!-- ============ UTAMA (Dashboard Kelas) ============ -->
+    <section class="screen on" id="s-utama"></section>
+
+    <!-- ============ PELAJAR (Senarai) ============ -->
+    <section class="screen" id="s-pelajar"></section>
+
+    <!-- ============ REKOD (Pelajar Aktif) ============ -->
+    <section class="screen" id="s-rekod">
+      <div class="hero flat">
+        <div class="hero-top">
+          <button class="hero-back" data-nav="pelajar" aria-label="Kembali"><span data-ic="back"></span></button>
+          <div class="hero-title">REKOD HAFAZAN</div>
+          <button class="hero-back" data-nav="tetapan" aria-label="Tetapan"><span data-ic="cog"></span></button>
+        </div>
+        <button class="stud-switch" id="rk-switch" data-nav="pelajar">
+          <span class="sw-av" id="rk-av">A</span>
+          <span class="sw-mid">
+            <span class="sw-n" id="rk-name">—</span>
+            <span class="sw-s"><span id="rk-kelas">—</span> · <span id="rk-mata">0</span> mata</span>
+          </span>
+          <span class="sw-btn"><span data-ic="switch"></span> Tukar</span>
+        </button>
+      </div>
+
+      <div class="seg">
+        <button class="on" data-seg="baru">Rekod Baru</button>
+        <button data-seg="saya">Rekod Pelajar</button>
+      </div>
+
+      <!-- REKOD BARU -->
+      <div class="seg-view on" id="view-baru">
+        <div class="pad">
+          <div class="field">
+            <label class="field-lbl" for="f-page"><span data-ic="edit"></span>Tulis Muka Surat Di Sini</label>
+            <input class="input" id="f-page" inputmode="numeric" placeholder="M/S  Contoh: 1 – 604" autocomplete="off">
+          </div>
+          <div class="auto-2">
+            <div class="auto-box dim" id="box-juz"><div class="a-l">Auto Juzuk</div><div class="a-v" id="f-juz">—</div></div>
+            <div class="auto-box dim" id="box-surah"><div class="a-l">Auto Surah</div><div class="a-v" id="f-surah">—</div></div>
+          </div>
+
+          <div class="field" style="margin-top:15px">
+            <label class="field-lbl"><span data-ic="layers"></span>Pilih Fasa</label>
+            <div class="fasa-grid" id="fasa-grid"></div>
+          </div>
+
+          <div class="field">
+            <label class="field-lbl" for="f-note"><span data-ic="note"></span>Catatan (pilihan)</label>
+            <textarea class="input" id="f-note" placeholder="Cth: Lancar, perlu ulang ayat 5–7..."></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-block" id="f-save" style="margin-top:4px">
+            <span data-ic="save"></span> Simpan Rekod <span id="f-pts" style="opacity:.85"></span>
+          </button>
+          <p class="hint" id="fasa-desc">Pilih fasa yang sesuai untuk teruskan rekod hafazan.</p>
+        </div>
+      </div>
+
+      <!-- REKOD PELAJAR -->
+      <div class="seg-view" id="view-saya">
+        <div class="pad">
+          <div class="filter-row">
+            <select class="select" id="filter-fasa"><option value="">Semua Fasa</option></select>
+            <select class="select" id="filter-tarikh">
+              <option value="">Semua Tarikh</option>
+              <option value="today">Hari Ini</option>
+              <option value="week">7 Hari</option>
+              <option value="month">Bulan Ini</option>
+            </select>
+          </div>
+          <div id="rekod-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ANALISIS ============ -->
+    <section class="screen" id="s-analisis"></section>
+
+    <!-- ============ LAPORAN ============ -->
+    <section class="screen" id="s-laporan"></section>
+
+    <!-- ============ TETAPAN ============ -->
+    <section class="screen" id="s-tetapan">
+      <div class="hero flat">
+        <div class="hero-top">
+          <button class="hero-back" data-nav="utama" aria-label="Kembali"><span data-ic="back"></span></button>
+          <div class="hero-title">TETAPAN KELAS</div>
+          <div style="width:38px"></div>
+        </div>
+        <div class="prof-hero">
+          <div class="prof-av" id="pf-av">K</div>
+          <div class="prof-name" id="pf-name">—</div>
+          <div class="prof-sub" id="pf-sub">—</div>
+          <div class="prof-stats" id="pf-stats"></div>
+        </div>
+      </div>
+
+      <div class="pad">
+        <div class="section">
+          <div class="sec-head"><div class="sec-title"><span class="ic" data-ic="cap"></span> Maklumat Kelas</div></div>
+          <div class="list-card">
+            <div class="row"><div class="row-ic"><span data-ic="cap"></span></div><div class="row-body"><div class="row-t">Nama Kelas</div></div><div class="row-r"><input class="input" id="in-kelas" placeholder="Cth: 1 Hafs"></div></div>
+            <div class="row"><div class="row-ic"><span data-ic="teacher"></span></div><div class="row-body"><div class="row-t">Guru Hafazan</div></div><div class="row-r"><input class="input" id="in-guru" placeholder="Nama guru"></div></div>
+            <div class="row"><div class="row-ic"><span data-ic="home"></span></div><div class="row-body"><div class="row-t">Sekolah / Institusi</div></div><div class="row-r"><input class="input" id="in-sekolah" placeholder="Nama sekolah"></div></div>
+            <div class="row"><div class="row-ic"><span data-ic="calendar"></span></div><div class="row-body"><div class="row-t">Tahun / Sesi</div></div><div class="row-r"><input class="input" id="in-tahun" placeholder="2026"></div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="sec-head"><div class="sec-title"><span class="ic" data-ic="users"></span> Senarai Pelajar</div><button class="link" data-action="add-student">Tambah <span data-ic="plus"></span></button></div>
+          <div class="list-card" id="student-manage"></div>
+        </div>
+
+        <div class="section">
+          <div class="sec-head"><div class="sec-title"><span class="ic" data-ic="target"></span> Sasaran Harian</div></div>
+          <div class="list-card">
+            <div class="row"><div class="row-ic"><span data-ic="target"></span></div><div class="row-body"><div class="row-t">Muka Surat / Hari</div><div class="row-s">Untuk kira Prestasi Harian setiap pelajar</div></div><div class="row-r"><input class="input num" id="in-target" inputmode="numeric" placeholder="5"></div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="sec-head"><div class="sec-title"><span class="ic" data-ic="star"></span> Mata Setiap Fasa</div></div>
+          <div class="list-card" id="pts-settings"></div>
+        </div>
+
+        <div class="section">
+          <div class="sec-head"><div class="sec-title"><span class="ic" data-ic="db"></span> Data Kelas</div></div>
+          <div class="list-card">
+            <button class="row" data-action="export" style="width:100%;text-align:left"><div class="row-ic"><span data-ic="download"></span></div><div class="row-body"><div class="row-t">Muat Turun Data (backup)</div><div class="row-s">Simpan fail .json semua pelajar</div></div><div class="chev"><span data-ic="chev"></span></div></button>
+            <button class="row" data-action="import" style="width:100%;text-align:left"><div class="row-ic"><span data-ic="upload"></span></div><div class="row-body"><div class="row-t">Import Data</div><div class="row-s">Pulih dari fail backup</div></div><div class="chev"><span data-ic="chev"></span></div></button>
+            <button class="row" data-action="reset" style="width:100%;text-align:left"><div class="row-ic del" style="background:var(--danger-soft);color:var(--danger)"><span data-ic="trash"></span></div><div class="row-body"><div class="row-t" style="color:var(--danger)">Set Semula Semua</div><div class="row-s">Padam semua pelajar & rekod</div></div><div class="chev"><span data-ic="chev"></span></div></button>
+          </div>
+        </div>
+        <input type="file" id="import-file" accept="application/json" hidden>
+
+        <div class="foot-brand">
+          <b>MyUA</b> — Revolusi Digital Hafazan Anda<br>
+          <span style="opacity:.8">Hafal · Scan · Selesai</span>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <nav class="nav" id="nav">
+    <button class="nav-item on" data-nav="utama"><span data-ic="home"></span><span class="nl">Utama</span></button>
+    <button class="nav-item" data-nav="pelajar"><span data-ic="users"></span><span class="nl">Pelajar</span></button>
+    <button class="nav-scan" data-action="scan"><span class="fab"><span data-ic="scan"></span></span><div class="sl">Scan</div></button>
+    <button class="nav-item" data-nav="analisis"><span data-ic="chart"></span><span class="nl">Analisis</span></button>
+    <button class="nav-item" data-nav="laporan"><span data-ic="report"></span><span class="nl">Laporan</span></button>
+  </nav>
+
+  <!-- ============ SCAN SHEET ============ -->
+  <div class="overlay" id="scanOverlay">
+    <div class="sheet">
+      <div class="grip"></div>
+      <div class="sheet-title">Imbas QR Hafazan</div>
+      <div class="sheet-sub" id="scanSub">Halakan kamera ke kod QR untuk isi rekod pelajar aktif</div>
+      <div class="scan-view" id="scanView"></div>
+      <button class="btn btn-primary btn-block" data-action="scan-manual"><span data-ic="edit"></span> Isi Manual (Rekod Pantas)</button>
+      <button class="btn btn-line btn-block" data-action="scan-close" style="margin-top:9px">Tutup</button>
+      <p class="hint">QR boleh mengandungi julat muka surat (cth: <b>3-5</b>) atau format <b>MYUA:hafazan:3:5</b>.</p>
+    </div>
+  </div>
+
+  <!-- ============ MODAL PELAJAR ============ -->
+  <div class="modal" id="studentModal">
+    <div class="modal-card">
+      <div class="grip"></div>
+      <div class="modal-title" id="sm-title">Tambah Pelajar</div>
+      <div class="modal-sub">Isi maklumat pelajar untuk kelas ini</div>
+      <div class="field">
+        <label class="field-lbl" for="sm-name"><span data-ic="user"></span>Nama Pelajar</label>
+        <input class="input" id="sm-name" placeholder="Nama penuh pelajar" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field-lbl" for="sm-no"><span data-ic="list"></span>No. Pelajar (pilihan)</label>
+        <input class="input" id="sm-no" inputmode="numeric" placeholder="Cth: 1" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-block" id="sm-save" style="margin-top:4px"><span data-ic="save"></span> Simpan Pelajar</button>
+      <button class="btn btn-line btn-block" data-action="modal-close" style="margin-top:9px">Batal</button>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toasts"></div>
+  <div class="pop" id="pop"></div>
+
+</div><!-- /app -->
+
+<!-- Bekas laporan untuk cetak / simpan PDF -->
+<div id="printRoot"></div>
+
+<script>
+"use strict";
+/* =================================================================
+   MyUA — Sistem Rekod Hafazan al-Quran (Edisi Kelas)
+   Fail tunggal, tiada kebergantungan luar. Data disimpan di peranti.
+   Sokongan: banyak pelajar · analisis kelas & individu · laporan PDF.
+   ================================================================= */
+
+/* ---------------- IKON ---------------- */
+function svg(inner,s){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="'+(s||24)+'" height="'+(s||24)+'">'+inner+'</svg>';}
+const ICONS={
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  chev:'<path d="M9 6l6 6-6 6"/>',
+  cog:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  star:'<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.4 6-5.5-3.2-5.5 3.2 1.4-6L3.3 9.2l6.1-.6z" fill="currentColor" stroke="none"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/>',
+  note:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>',
+  save:'<path d="M5 12l5 5L20 7"/>',
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.6" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.6" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.6" cy="18" r="1.2" fill="currentColor" stroke="none"/>',
+  scan:'<path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M4 12h16"/>',
+  chart:'<path d="M4 20V4"/><path d="M4 20h16"/><rect x="7" y="12" width="3" height="6" rx="1" fill="currentColor" stroke="none"/><rect x="12" y="8" width="3" height="10" rx="1" fill="currentColor" stroke="none"/><rect x="17" y="5" width="3" height="13" rx="1" fill="currentColor" stroke="none"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  users:'<circle cx="9" cy="8" r="3.4"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.4 3.4 0 0 1 0 6.6M17.5 20a5.5 5.5 0 0 0-3-4.9"/>',
+  cap:'<path d="M2 9l10-4 10 4-10 4z"/><path d="M6 11v5c0 1 2.7 3 6 3s6-2 6-3v-5"/>',
+  teacher:'<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M12 16v4M8 20h8"/><path d="M7 11l3-3 2 2 4-4"/>',
+  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
+  db:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  download:'<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  upload:'<path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/>',
+  trash:'<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>',
+  headphones:'<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h3v6H5.2A1.2 1.2 0 0 1 4 18.8z"/><path d="M20 14h-3v6h1.8A1.2 1.2 0 0 0 20 18.8z"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 3v16"/><path d="M8 7h7M8 11h7"/>',
+  refresh:'<path d="M4 12a8 8 0 0 1 13.7-5.7L20 8"/><path d="M20 3.5V8h-4.5"/><path d="M20 12a8 8 0 0 1-13.7 5.7L4 16"/><path d="M4 20.5V16h4.5"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3M8 21h8"/>',
+  pen:'<path d="M14 4l6 6L9 21l-5 1 1-5z"/><path d="M13 5l6 6"/>',
+  check:'<path d="M5 12l5 5L20 7"/>',
+  clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  calendar:'<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/>',
+  trophy:'<path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 21h6M12 15v6"/>',
+  cloud:'<path d="M7 18a4 4 0 0 1-.5-8 5 5 0 0 1 9.7 1.2A3.5 3.5 0 0 1 17 18z"/>',
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" fill="currentColor" stroke="none"/>',
+  flash:'<path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor" stroke="none"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  award:'<circle cx="12" cy="9" r="5"/><path d="M9 13l-2 8 5-3 5 3-2-8"/>',
+  fire:'<path d="M12 3c1 3-1 4-1 6 0 1 1 2 1 2s2-1 2-3c2 2 3 4 3 6a5 5 0 0 1-10 0c0-3 2-4 2-6 0-1 1-1 3-5z"/>',
+  page:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/>',
+  switch:'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+  report:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 17v-3M12 17v-6M15 17v-4"/>',
+  medal:'<circle cx="12" cy="14" r="5"/><path d="M8.5 9.5L6 3h4l2 4M15.5 9.5L18 3h-4l-2 4"/><path d="M12 12l.9 1.9 2 .3-1.5 1.4.4 2-1.8-1-1.8 1 .4-2L9.1 14.2l2-.3z" fill="currentColor" stroke="none"/>',
+  trend:'<path d="M3 17l6-6 4 4 7-7"/><path d="M17 8h4v4"/>',
+  print:'<path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M8 17h8v4H8z"/>'
+};
+function paintIcons(root){(root||document).querySelectorAll('[data-ic]').forEach(function(el){var n=el.getAttribute('data-ic');if(ICONS[n])el.innerHTML=svg(ICONS[n]);});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+/* ---------------- DATA AL-QURAN (Mushaf Madinah, 604 m/s) ---------------- */
+const TOTAL_PAGES=604;
+const JUZ_START=[1,22,42,62,82,102,121,142,162,182,201,222,242,262,282,302,322,342,362,382,402,422,442,462,482,502,522,542,562,582];
+const SURAHS=[
+ [1,"Al-Fatihah",1],[2,"Al-Baqarah",2],[3,"Ali 'Imran",50],[4,"An-Nisa'",77],[5,"Al-Ma'idah",106],
+ [6,"Al-An'am",128],[7,"Al-A'raf",151],[8,"Al-Anfal",177],[9,"At-Taubah",187],[10,"Yunus",208],
+ [11,"Hud",221],[12,"Yusuf",235],[13,"Ar-Ra'd",249],[14,"Ibrahim",255],[15,"Al-Hijr",262],
+ [16,"An-Nahl",267],[17,"Al-Isra'",282],[18,"Al-Kahf",293],[19,"Maryam",305],[20,"Ta-Ha",312],
+ [21,"Al-Anbiya'",322],[22,"Al-Hajj",332],[23,"Al-Mu'minun",342],[24,"An-Nur",350],[25,"Al-Furqan",359],
+ [26,"Asy-Syu'ara'",367],[27,"An-Naml",377],[28,"Al-Qasas",385],[29,"Al-'Ankabut",396],[30,"Ar-Rum",404],
+ [31,"Luqman",411],[32,"As-Sajdah",415],[33,"Al-Ahzab",418],[34,"Saba'",428],[35,"Fatir",434],
+ [36,"Ya-Sin",440],[37,"As-Saffat",446],[38,"Sad",453],[39,"Az-Zumar",458],[40,"Ghafir",467],
+ [41,"Fussilat",477],[42,"Asy-Syura",483],[43,"Az-Zukhruf",489],[44,"Ad-Dukhan",496],[45,"Al-Jasiyah",499],
+ [46,"Al-Ahqaf",502],[47,"Muhammad",507],[48,"Al-Fath",511],[49,"Al-Hujurat",515],[50,"Qaf",518],
+ [51,"Az-Zariyat",520],[52,"At-Tur",523],[53,"An-Najm",526],[54,"Al-Qamar",528],[55,"Ar-Rahman",531],
+ [56,"Al-Waqi'ah",534],[57,"Al-Hadid",537],[58,"Al-Mujadalah",542],[59,"Al-Hasyr",545],[60,"Al-Mumtahanah",549],
+ [61,"As-Saff",551],[62,"Al-Jumu'ah",553],[63,"Al-Munafiqun",554],[64,"At-Tagabun",556],[65,"At-Talaq",558],
+ [66,"At-Tahrim",560],[67,"Al-Mulk",562],[68,"Al-Qalam",564],[69,"Al-Haqqah",566],[70,"Al-Ma'arij",568],
+ [71,"Nuh",570],[72,"Al-Jinn",572],[73,"Al-Muzzammil",574],[74,"Al-Muddassir",575],[75,"Al-Qiyamah",577],
+ [76,"Al-Insan",578],[77,"Al-Mursalat",580],[78,"An-Naba'",582],[79,"An-Nazi'at",583],[80,"'Abasa",585],
+ [81,"At-Takwir",586],[82,"Al-Infitar",587],[83,"Al-Mutaffifin",587],[84,"Al-Insyiqaq",589],[85,"Al-Buruj",590],
+ [86,"At-Tariq",591],[87,"Al-A'la",591],[88,"Al-Gasyiyah",592],[89,"Al-Fajr",593],[90,"Al-Balad",594],
+ [91,"Asy-Syams",595],[92,"Al-Lail",595],[93,"Ad-Duha",596],[94,"Asy-Syarh",596],[95,"At-Tin",597],
+ [96,"Al-'Alaq",597],[97,"Al-Qadr",598],[98,"Al-Bayyinah",598],[99,"Az-Zalzalah",599],[100,"Al-'Adiyat",599],
+ [101,"Al-Qari'ah",600],[102,"At-Takasur",600],[103,"Al-'Asr",601],[104,"Al-Humazah",601],[105,"Al-Fil",601],
+ [106,"Quraisy",602],[107,"Al-Ma'un",602],[108,"Al-Kausar",602],[109,"Al-Kafirun",603],[110,"An-Nasr",603],
+ [111,"Al-Masad",603],[112,"Al-Ikhlas",604],[113,"Al-Falaq",604],[114,"An-Nas",604]
+];
+function getJuz(p){var j=1;for(var i=0;i<JUZ_START.length;i++){if(p>=JUZ_START[i])j=i+1;else break;}return j;}
+function surahAt(p){var s=SURAHS[0];for(var i=0;i<SURAHS.length;i++){if(p>=SURAHS[i][2])s=SURAHS[i];else break;}return s;}
+function juzLabel(a,b){var x=getJuz(a),y=getJuz(b);return x===y?('Juz '+x):('Juz '+x+' – '+y);}
+function surahLabel(a,b){var x=surahAt(a),y=surahAt(b);return x[0]===y[0]?x[1]:(x[1]+' – '+y[1]);}
+
+/* ---------------- FASA ---------------- */
+const PHASES={
+ talaqqi:{key:'talaqqi',label:'Talaqqi',short:'Talaqqi',pts:10,color:'var(--c-talaqqi)',icon:'headphones',desc:'Dengar bacaan guru atau rakaman master audio dengan teliti sebelum meneruskan hafazan mandiri.'},
+ hafazan:{key:'hafazan',label:'Hafazan Baharu',short:'Hafazan',pts:20,color:'var(--c-hafazan)',icon:'book',desc:'Mula menghafal ayat atau muka surat baharu yang telah disemak secara bertingkat.'},
+ murajaah:{key:'murajaah',label:'Murajaah',short:'Murajaah',pts:15,color:'var(--c-murajaah)',icon:'refresh',desc:'Ulang kaji hafazan lama supaya kekal mantap, lancar dan tidak mudah lupa.'},
+ tasmik:{key:'tasmik',label:'Tasmik',short:'Tasmik',pts:25,color:'var(--c-tasmik)',icon:'mic',desc:'Perdengarkan hafazan kepada guru untuk pengesahan dan penilaian secara lisan.'},
+ tahriri:{key:'tahriri',label:'Tahriri',short:'Tahriri',pts:10,color:'var(--c-tahriri)',icon:'pen',desc:'Ujian bertulis — tuliskan semula ayat daripada ingatan untuk menguji ketepatan hafazan.'}
+};
+const PHASE_ORDER=['talaqqi','hafazan','murajaah','tasmik','tahriri'];
+const PC={talaqqi:'#0d9488',hafazan:'#0e7a43',murajaah:'#ef8f1c',tasmik:'#5b54d6',tahriri:'#dc2f6e'};
+
+/* ---------------- PENYIMPANAN ---------------- */
+const LS_KEY='myua_v2';
+const LS_OLD='myua_v1';
+var memFallback=null;
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return (k===LS_KEY)?memFallback:null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){if(k===LS_KEY)memFallback=v;}}
+
+function defaultPoints(){var o={};PHASE_ORDER.forEach(function(k){o[k]=PHASES[k].pts;});return o;}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function daysAgo(n,h,m){var d=new Date();d.setDate(d.getDate()-n);d.setHours(h||9,m||0,0,0);return d.getTime();}
+
+/* --- Nama contoh untuk 20 pelajar (boleh diedit/padam oleh guru) --- */
+const SEED_NAMES=[
+ 'Ahmad Asif Irfan','Muhammad Haziq Danish','Nur Aisyah Sofea','Aiman Hakimi','Siti Khadijah Rania',
+ 'Muhammad Adam Harith','Nurul Iman Batrisya','Umar Al-Faruq','Fatimah Az-Zahra','Muhammad Ammar Zaki',
+ 'Aisyah Humaira','Zulfahmi Danial','Nur Sofia Damia','Muhammad Luqman Hakim','Khairunnisa Balqis',
+ 'Muhammad Iqbal Hadi','Nur Alya Insyirah','Abdul Rahman Aqil','Maryam Sofea','Muhammad Zharfan Aidid'
+];
+/* Jana rekod contoh rawak supaya ranking & analisis nampak hidup */
+function seedRecordsFor(seed){
+ var rnd=function(){seed=(seed*9301+49297)%233280;return seed/233280;};
+ var out=[],count=Math.floor(rnd()*8); // 0..7 rekod
+ for(var i=0;i<count;i++){
+  var ph=PHASE_ORDER[Math.floor(rnd()*PHASE_ORDER.length)];
+  var start=1+Math.floor(rnd()*40);
+  var len=Math.floor(rnd()*3); // span 0..2
+  var end=Math.min(TOTAL_PAGES,start+len);
+  var day=Math.floor(rnd()*7);
+  out.push({id:uid(),phase:ph,start:start,end:end,note:'',ts:daysAgo(day,8+Math.floor(rnd()*8),Math.floor(rnd()*59))});
+ }
+ return out;
+}
+function seedStudents(){
+ return SEED_NAMES.map(function(nm,i){
+  return {id:uid(),no:i+1,name:nm,records:seedRecordsFor((i+3)*137+7),meta:{created:Date.now()}};
+ });
+}
+function defaultState(){
+ return {
+  klass:{name:'1 HAFS',guru:'Ustaz Azid',sekolah:'',tahun:String(new Date().getFullYear())},
+  points:defaultPoints(),
+  target:5,
+  students:seedStudents(),
+  activeId:null,
+  meta:{created:Date.now(),seeded:true,version:2}
+ };
+}
+
+/* Migrasi automatik dari sistem lama (satu pelajar) */
+function migrateV1(){
+ var raw=lsGet(LS_OLD);
+ if(!raw)return null;
+ try{
+  var d=JSON.parse(raw);
+  var pf=d.profile||{};
+  var stud={id:uid(),no:1,name:pf.name||'Pelajar 1',records:Array.isArray(d.records)?d.records:[],meta:{created:(d.meta&&d.meta.created)||Date.now()}};
+  return {
+   klass:{name:pf.kelas||'',guru:pf.guru||'',sekolah:'',tahun:String(new Date().getFullYear())},
+   points:Object.assign(defaultPoints(),d.points||{}),
+   target:(typeof d.target==='number'&&d.target>0)?d.target:5,
+   students:[stud],
+   activeId:stud.id,
+   meta:{created:Date.now(),migratedFrom:'v1',version:2}
+  };
+ }catch(e){return null;}
+}
+
+var state;
+function normalizeState(d){
+ var students=Array.isArray(d.students)?d.students.map(function(s,i){
+  return {id:s.id||uid(),no:(s.no!=null?s.no:i+1),name:s.name||('Pelajar '+(i+1)),records:Array.isArray(s.records)?s.records:[],meta:s.meta||{created:Date.now()}};
+ }):[];
+ var activeId=d.activeId;
+ if(!students.some(function(s){return s.id===activeId;}))activeId=students.length?students[0].id:null;
+ return {
+  klass:Object.assign({name:'',guru:'',sekolah:'',tahun:String(new Date().getFullYear())},d.klass||{}),
+  points:Object.assign(defaultPoints(),d.points||{}),
+  target:(typeof d.target==='number'&&d.target>0)?d.target:5,
+  students:students,
+  activeId:activeId,
+  meta:d.meta||{created:Date.now(),version:2}
+ };
+}
+function loadState(){
+ var raw=lsGet(LS_KEY);
+ if(!raw){
+  var mig=migrateV1();
+  state=mig?normalizeState(mig):defaultState();
+  if(!state.activeId&&state.students.length)state.activeId=state.students[0].id;
+  saveState();
+  return;
+ }
+ try{state=normalizeState(JSON.parse(raw));}
+ catch(e){state=defaultState();}
+ if(!state.activeId&&state.students.length)state.activeId=state.students[0].id;
+}
+function saveState(){lsSet(LS_KEY,JSON.stringify(state));}
+
+/* ---------------- TARIKH ---------------- */
+function two(n){return(n<10?'0':'')+n;}
+function fmtDate(ts){var d=new Date(ts);return two(d.getDate())+'/'+two(d.getMonth()+1)+'/'+d.getFullYear();}
+function fmtTime(ts){var d=new Date(ts),h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h%12;if(h===0)h=12;return h+':'+two(m)+' '+ap;}
+function dayKey(ts){var d=new Date(ts);return d.getFullYear()+'-'+two(d.getMonth()+1)+'-'+two(d.getDate());}
+function startOfDay(ts){var d=new Date(ts);d.setHours(0,0,0,0);return d.getTime();}
+function isToday(ts){return startOfDay(ts)===startOfDay(Date.now());}
+function inLastDays(ts,n){var from=startOfDay(Date.now())-(n-1)*86400000;return ts>=from;}
+function isThisMonth(ts){var d=new Date(ts),n=new Date();return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();}
+
+/* ---------------- PELAJAR AKTIF ---------------- */
+function activeStudent(){
+ var s=state.students.filter(function(x){return x.id===state.activeId;})[0];
+ if(!s&&state.students.length){s=state.students[0];state.activeId=s.id;}
+ return s||null;
+}
+function setActive(id){state.activeId=id;saveState();}
+function studentById(id){return state.students.filter(function(x){return x.id===id;})[0]||null;}
+
+/* ---------------- OPERASI REKOD (pada senarai records) ---------------- */
+function pointsFor(phase){return (state.points&&state.points[phase])||PHASES[phase].pts;}
+function pageCount(r){return Math.max(1,(r.end-r.start+1));}
+function recPoints(r){return pointsFor(r.phase);}
+function mataOf(recs){return recs.reduce(function(s,r){return s+recPoints(r);},0);}
+function pagesOf(recs){return recs.reduce(function(s,r){return s+pageCount(r);},0);}
+function sortRecs(recs){return recs.slice().sort(function(a,b){return b.ts-a.ts;});}
+
+function parsePages(str){
+ str=String(str||'').trim().replace(/\s+/g,'');
+ if(!str)return null;
+ var m=str.match(/^(\d{1,3})[-–—](\d{1,3})$/);
+ var a,b;
+ if(m){a=+m[1];b=+m[2];}
+ else if(/^\d{1,3}$/.test(str)){a=b=+str;}
+ else return {invalid:true};
+ if(a>b){var t=a;a=b;b=t;}
+ if(a<1||b>TOTAL_PAGES)return {invalid:true};
+ return {start:a,end:b};
+}
+function addRecord(stud,d){
+ var r={id:uid(),phase:d.phase,start:d.start,end:d.end,note:(d.note||'').trim(),ts:Date.now()};
+ stud.records.push(r);saveState();return r;
+}
+function deleteRecord(stud,id){
+ stud.records=stud.records.filter(function(r){return r.id!==id;});saveState();
+}
+
+/* Statistik untuk senarai rekod dalam julat */
+function statsFor(recsAll,range){
+ var recs=recsAll.filter(function(r){
+  if(range==='today')return isToday(r.ts);
+  if(range==='week')return inLastDays(r.ts,7);
+  if(range==='month')return isThisMonth(r.ts);
+  return true;
+ });
+ var mata=0,pages=0,surahSet={},juzSet={};
+ recs.forEach(function(r){
+  mata+=recPoints(r);pages+=pageCount(r);
+  for(var p=r.start;p<=r.end;p++){surahSet[surahAt(p)[0]]=1;juzSet[getJuz(p)]=1;}
+ });
+ return {recs:recs,mata:mata,pages:pages,surah:Object.keys(surahSet).length,juz:Object.keys(juzSet).length,juzuk:Math.round(pages/20*10)/10};
+}
+function seriesFor(recsAll,range){
+ var out=[],i,d,key,map={};
+ recsAll.forEach(function(r){var kk=bucketKey(r.ts,range);map[kk]=(map[kk]||0)+recPoints(r);});
+ if(range==='today'||range==='week'){
+  for(i=6;i>=0;i--){d=new Date();d.setDate(d.getDate()-i);key=dayKey(d.getTime());out.push({label:['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'][d.getDay()],value:map[key]||0});}
+ }else{
+  for(i=5;i>=0;i--){d=new Date();d.setMonth(d.getMonth()-i,1);key=d.getFullYear()+'-'+two(d.getMonth()+1);out.push({label:['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'][d.getMonth()],value:map[key]||0});}
+ }
+ return out;
+}
+function bucketKey(ts,range){var d=new Date(ts);if(range==='month')return d.getFullYear()+'-'+two(d.getMonth()+1);return dayKey(ts);}
+function streakOf(recs){
+ if(!recs.length)return 0;
+ var days={};recs.forEach(function(r){days[dayKey(r.ts)]=1;});
+ var c=0,d=new Date();d.setHours(0,0,0,0);
+ if(!days[dayKey(d.getTime())])d.setDate(d.getDate()-1);
+ while(days[dayKey(d.getTime())]){c++;d.setDate(d.getDate()-1);}
+ return c;
+}
+
+/* ---------------- STATISTIK KELAS ---------------- */
+function classAllRecords(){var out=[];state.students.forEach(function(s){out=out.concat(s.records);});return out;}
+function studentTotal(s){return mataOf(s.records);}
+function rankedStudents(){
+ return state.students.slice().sort(function(a,b){
+  var d=studentTotal(b)-studentTotal(a);
+  if(d)return d;
+  return (a.no||0)-(b.no||0);
+ });
+}
+function classStats(){
+ var recs=classAllRecords();
+ var totalMata=mataOf(recs),totalPages=pagesOf(recs);
+ var n=state.students.length||1;
+ var active=state.students.filter(function(s){return s.records.length;}).length;
+ return {n:state.students.length,active:active,totalMata:totalMata,totalPages:totalPages,totalRecs:recs.length,avgMata:Math.round(totalMata/n),avgPages:Math.round(totalPages/n*10)/10};
+}
+
+/* ---------------- UTIL VISUAL ---------------- */
+function tint(hex,aa){return hex+(aa||'1a');}
+function brandMark(){return '<svg class="brand-emblem" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="13" fill="rgba(255,255,255,.15)"/><path d="M24 15c-3.4-2.6-8-2.6-11-1.6v20c3-1 7.6-1 11 1.6 3.4-2.6 8-2.6 11-1.6v-20c-3-1-7.6-1-11 1.6z" fill="none" stroke="#b6e072" stroke-width="2.3" stroke-linejoin="round"/><path d="M24 16.6v18.4" stroke="#b6e072" stroke-width="2.3"/></svg>';}
+function initials(name){var p=String(name||'').trim().split(/\s+/).filter(Boolean);if(!p.length)return '?';return (p[0][0]+(p.length>1?p[p.length-1][0]:'')).toUpperCase();}
+function avatarColor(id){var pal=['#0e7a43','#0d9488','#5b54d6','#ef8f1c','#dc2f6e','#2563eb','#7c3aed','#059669'];var h=0;String(id||'').split('').forEach(function(c){h=(h*31+c.charCodeAt(0))>>>0;});return pal[h%pal.length];}
+
+/* ---------------- STATE UI ---------------- */
+var currentPhase='hafazan', currentTab='today', editingId=null;
+var analysisMode='kelas'; // 'kelas' | 'individu'
+var analysisStudentId=null;
+var studentQuery='';
+var editingStudentId=null;
+
+/* ---------------- KOMPONEN REKOD ---------------- */
+function recItemHTML(r,opts){
+ opts=opts||{};
+ var P=PHASES[r.phase], ac=PC[r.phase];
+ var pageTxt=r.start===r.end?('M/S '+r.start):('M/S '+r.start+'–'+r.end);
+ return '<div class="rec" style="--ac:'+ac+'">'
+  +'<div class="rec-n" style="background:'+ac+'">'+svg(ICONS[P.icon],16)+'</div>'
+  +'<div class="rec-mid">'
+    +'<div class="rec-top"><span class="rec-phase">'+P.label+'</span></div>'
+    +'<div class="rec-ms"><b>'+pageTxt+'</b> · '+juzLabel(r.start,r.end)+' · '+esc(surahLabel(r.start,r.end))+'</div>'
+    +'<div class="rec-dt">'+svg(ICONS.calendar,11)+' '+fmtDate(r.ts)+' &nbsp; '+svg(ICONS.clock,11)+' '+fmtTime(r.ts)+(r.note?(' &nbsp;· '+esc(r.note)):'')+'</div>'
+  +'</div>'
+  +'<div class="rec-r"><span class="rec-pts">+'+recPoints(r)+' Mata</span>'
+    +(opts.actions?('<div class="rec-acts">'
+        +'<button class="icon-btn" data-action="edit" data-id="'+r.id+'" aria-label="Sunting">'+svg(ICONS.edit,14)+'</button>'
+        +'<button class="icon-btn del" data-action="del" data-id="'+r.id+'" aria-label="Padam">'+svg(ICONS.trash,14)+'</button>'
+      +'</div>'):'')
+  +'</div>'
+ +'</div>';
+}
+function phaseCardHTML(key,idx){
+ var P=PHASES[key],ac=PC[key];
+ return '<div class="phase" style="--ac:'+ac+'">'
+  +'<div class="ph-num">'+idx+'</div>'
+  +'<div class="ph-ic">'+svg(ICONS[P.icon],23)+'</div>'
+  +'<div class="ph-body">'
+    +'<div class="ph-title">'+P.label+'</div>'
+    +'<div class="ph-desc">'+P.desc+'</div>'
+    +'<div class="ph-foot"><span class="pts">'+svg(ICONS.star,12)+' +'+pointsFor(key)+' Mata</span>'
+      +'<button class="ph-btn" data-phase="'+key+'">'+svg(ICONS.plus,13)+' Rekod</button></div>'
+  +'</div>'
+ +'</div>';
+}
+
+/* ---------------- RENDER: UTAMA (Dashboard Kelas) ---------------- */
+function renderHome(){
+ var K=state.klass, cs=classStats();
+ var ranked=rankedStudents();
+ var top=ranked.slice(0,3);
+ var allRecs=classAllRecords();
+ var todayRecs=allRecs.filter(function(r){return isToday(r.ts);});
+ var todayMata=mataOf(todayRecs);
+
+ var kpi=''
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.hafazan)+';color:'+PC.hafazan+'">'+svg(ICONS.users,16)+'</div><div class="k-v">'+cs.n+'</div><div class="k-l">Jumlah Pelajar</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint('#f6b32b')+';color:#c98908">'+svg(ICONS.star,16)+'</div><div class="k-v">'+cs.totalMata+'</div><div class="k-l">Jumlah Mata Kelas</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.tasmik)+';color:'+PC.tasmik+'">'+svg(ICONS.trend,16)+'</div><div class="k-v">'+cs.avgMata+'</div><div class="k-l">Purata Mata / Pelajar</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.murajaah)+';color:'+PC.murajaah+'">'+svg(ICONS.page,16)+'</div><div class="k-v">'+cs.totalPages+' <small>m/s</small></div><div class="k-l">Muka Surat Terkumpul</div></div>';
+
+ var topHTML=top.map(function(s,i){
+  var cls=['top1','top2','top3'][i];
+  var medal=['🥇','🥈','🥉'][i];
+  return '<button class="stud" data-open-student="'+s.id+'">'
+   +'<div class="st-rank '+cls+'">'+medal+'</div>'
+   +'<div class="st-av" style="background:'+avatarColor(s.id)+'">'+esc(initials(s.name))+'</div>'
+   +'<div class="st-mid"><div class="st-n">'+esc(s.name)+'</div>'
+     +'<div class="st-meta"><span>'+s.records.length+' rekod</span><span>'+pagesOf(s.records)+' m/s</span></div></div>'
+   +'<div class="st-r"><span class="st-mata">'+svg(ICONS.star,11)+' '+studentTotal(s)+'</span></div>'
+  +'</button>';
+ }).join('') || '<div class="empty"><div class="e-ic">'+svg(ICONS.users,32)+'</div><div class="e-t">Belum ada pelajar</div><div class="e-s">Tambah pelajar di Tetapan untuk mula.</div></div>';
+
+ var recents=sortRecs(allRecs).slice(0,4).map(function(r){
+  var owner=state.students.filter(function(s){return s.records.indexOf(r)>=0;})[0];
+  var name=owner?owner.name:'';
+  var P=PHASES[r.phase],ac=PC[r.phase];
+  return '<div class="rec" style="--ac:'+ac+'">'
+   +'<div class="rec-n" style="background:'+ac+'">'+svg(ICONS[P.icon],16)+'</div>'
+   +'<div class="rec-mid"><div class="rec-top"><span class="rec-phase">'+esc(name)+'</span></div>'
+     +'<div class="rec-ms">'+P.label+' · <b>M/S '+r.start+(r.start!==r.end?('–'+r.end):'')+'</b></div>'
+     +'<div class="rec-dt">'+svg(ICONS.calendar,11)+' '+fmtDate(r.ts)+' &nbsp; '+svg(ICONS.clock,11)+' '+fmtTime(r.ts)+'</div></div>'
+   +'<div class="rec-r"><span class="rec-pts">+'+recPoints(r)+'</span></div>'
+  +'</div>';
+ }).join('') || '<div class="empty"><div class="e-ic">'+svg(ICONS.page,32)+'</div><div class="e-t">Belum ada rekod</div><div class="e-s">Pilih pelajar dan mula merekod.</div></div>';
+
+ document.getElementById('s-utama').innerHTML=''
+  +'<div class="hero">'
+    +'<div class="hero-top">'
+      +'<div class="brandrow">'+brandMark()+'<div><div class="brand-name">My<span class="go">UA</span></div><div class="brand-tag">Sistem Hafazan Kelas</div></div></div>'
+      +'<button class="hero-back" data-nav="tetapan" aria-label="Tetapan">'+svg(ICONS.cog,18)+'</button>'
+    +'</div>'
+    +'<div class="greet">'
+      +'<div style="display:flex;gap:11px;align-items:flex-start">'
+        +'<div class="avatar">'+svg(ICONS.cap,22)+'</div>'
+        +'<div><div class="greet-hi">Kelas Hafazan</div><div class="greet-name">'+esc(K.name||'Kelas')+'</div>'
+          +'<div class="greet-sub"><span>Guru: <b>'+esc(K.guru||'-')+'</b></span><span>'+esc(K.tahun||'')+'</span></div></div>'
+      +'</div>'
+      +'<div class="mata"><div class="lbl">HARI INI</div><div class="val">'+svg(ICONS.star,14)+'<span>'+todayMata+'</span></div></div>'
+    +'</div>'
+    +'<div class="bismillah">﷽</div>'
+  +'</div>'
+  +'<div class="pad">'
+    +'<div class="kpi-grid">'+kpi+'</div>'
+    +'<div class="act-bar" style="margin-top:14px">'
+      +'<button class="btn btn-primary sm" data-nav="pelajar">'+svg(ICONS.users,16)+' Senarai Pelajar</button>'
+      +'<button class="btn btn-gold sm" data-nav="laporan">'+svg(ICONS.report,16)+' Laporan PDF</button>'
+    +'</div>'
+    +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="medal"></span> Pelajar Terbaik</div><button class="link" data-nav="analisis">Ranking Penuh '+svg(ICONS.chev,13)+'</button></div>'+topHTML+'</div>'
+    +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="clock"></span> Aktiviti Terkini</div></div>'+recents+'</div>'
+  +'</div>';
+ paintIcons(document.getElementById('s-utama'));
+}
+
+/* ---------------- RENDER: SENARAI PELAJAR ---------------- */
+function renderStudents(){
+ var ranked=rankedStudents();
+ var maxMata=1;ranked.forEach(function(s){var m=studentTotal(s);if(m>maxMata)maxMata=m;});
+ var q=studentQuery.trim().toLowerCase();
+ var list=ranked.map(function(s,idx){
+  if(q&&s.name.toLowerCase().indexOf(q)<0)return '';
+  var mata=studentTotal(s);
+  var rankCls=idx===0?'top1':idx===1?'top2':idx===2?'top3':'';
+  var pct=Math.round(mata/maxMata*100);
+  return '<button class="stud" data-open-student="'+s.id+'">'
+    +'<div class="st-rank '+rankCls+'">'+(idx+1)+'</div>'
+    +'<div class="st-av" style="background:'+avatarColor(s.id)+'">'+esc(initials(s.name))+'</div>'
+    +'<div class="st-mid"><div class="st-n">'+esc(s.name)+'</div>'
+      +'<div class="st-meta"><span><b>'+s.records.length+'</b> rekod</span><span><b>'+pagesOf(s.records)+'</b> m/s</span><span>Streak <b>'+streakOf(s.records)+'</b></span></div></div>'
+    +'<div class="st-r"><span class="st-mata">'+svg(ICONS.star,11)+' '+mata+'</span><span class="st-prog"><i style="width:'+pct+'%"></i></span></div>'
+  +'</button>';
+ }).join('');
+ if(!list.trim())list='<div class="empty"><div class="e-ic">'+svg(ICONS.users,32)+'</div><div class="e-t">Tiada pelajar dijumpai</div><div class="e-s">'+(q?'Cuba kata kunci lain.':'Tambah pelajar di Tetapan.')+'</div></div>';
+
+ document.getElementById('s-pelajar').innerHTML=''
+  +'<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama"><span data-ic="back"></span></button><div class="hero-title">SENARAI PELAJAR</div><button class="hero-back" data-action="add-student" aria-label="Tambah">'+svg(ICONS.plus,18)+'</button></div>'
+    +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">'+state.students.length+' pelajar · '+esc(state.klass.name||'Kelas')+'</div></div></div>'
+  +'<div class="pad" style="padding-top:16px">'
+    +'<div class="stud-search">'+svg(ICONS.list,17)+'<input id="stud-search-in" placeholder="Cari nama pelajar..." value="'+esc(studentQuery)+'"></div>'
+    +list
+    +'<button class="btn btn-line btn-block" data-action="add-student" style="margin-top:6px">'+svg(ICONS.plus,17)+' Tambah Pelajar Baharu</button>'
+  +'</div>';
+ paintIcons(document.getElementById('s-pelajar'));
+ var si=document.getElementById('stud-search-in');
+ if(si){si.addEventListener('input',function(){studentQuery=this.value;var pos=this.selectionStart;renderStudents();var n=document.getElementById('stud-search-in');if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}}});}
+}
+function openStudent(id){setActive(id);navTo('rekod');setSeg('baru');editingId=null;setSaveLabel();}
+
+/* ---------------- RENDER: HEADER REKOD + FASA ---------------- */
+function renderRekodHeader(){
+ var s=activeStudent();
+ var nm=s?s.name:'—';
+ document.getElementById('rk-av').textContent=initials(nm);
+ document.getElementById('rk-av').style.background=s?avatarColor(s.id):'rgba(255,255,255,.2)';
+ document.getElementById('rk-name').textContent=nm;
+ document.getElementById('rk-kelas').textContent=state.klass.name||'-';
+ document.getElementById('rk-mata').textContent=s?studentTotal(s):0;
+}
+function buildFasaGrid(){
+ document.getElementById('fasa-grid').innerHTML=PHASE_ORDER.map(function(k){
+  var P=PHASES[k];
+  return '<button class="fasa'+(k===currentPhase?' sel':'')+'" style="--ac:'+PC[k]+'" data-phase-chip="'+k+'">'
+    +'<span class="f-dot">'+svg(ICONS.check,11)+'</span>'
+    +'<span class="f-ic">'+svg(ICONS[P.icon],20)+'</span>'
+    +'<span class="f-l">'+P.short+'</span></button>';
+ }).join('');
+}
+function refreshFasaSave(){
+ var P=PHASES[currentPhase],ac=PC[currentPhase];
+ var ptsEl=document.getElementById('f-pts');if(ptsEl)ptsEl.textContent=' (+'+pointsFor(currentPhase)+' Mata)';
+ var descEl=document.getElementById('fasa-desc');if(descEl)descEl.textContent=P.desc;
+ var btn=document.getElementById('f-save');
+ if(btn){btn.style.background='linear-gradient(135deg,'+ac+','+ac+'dd)';btn.style.boxShadow='0 10px 24px '+ac+'55';}
+}
+function selectPhase(k){
+ currentPhase=k;
+ document.querySelectorAll('#fasa-grid .fasa').forEach(function(el){el.classList.toggle('sel',el.getAttribute('data-phase-chip')===k);});
+ refreshFasaSave();
+}
+function updateAuto(){
+ var v=document.getElementById('f-page').value;
+ var p=parsePages(v);
+ var jz=document.getElementById('f-juz'),sr=document.getElementById('f-surah');
+ var bj=document.getElementById('box-juz'),bs=document.getElementById('box-surah');
+ if(!p||p.invalid){jz.textContent='—';sr.textContent='—';bj.classList.add('dim');bs.classList.add('dim');return;}
+ jz.textContent=juzLabel(p.start,p.end);
+ sr.textContent=surahLabel(p.start,p.end);
+ bj.classList.remove('dim');bs.classList.remove('dim');
+}
+
+/* ---------------- RENDER: SENARAI REKOD PELAJAR AKTIF ---------------- */
+function renderList(){
+ var s=activeStudent();
+ var el=document.getElementById('rekod-list');
+ if(!s){el.innerHTML='<div class="empty"><div class="e-ic">'+svg(ICONS.user,32)+'</div><div class="e-t">Tiada pelajar dipilih</div></div>';return;}
+ var fFasa=document.getElementById('filter-fasa').value;
+ var fTarikh=document.getElementById('filter-tarikh').value;
+ var recs=sortRecs(s.records).filter(function(r){
+  if(fFasa&&r.phase!==fFasa)return false;
+  if(fTarikh==='today'&&!isToday(r.ts))return false;
+  if(fTarikh==='week'&&!inLastDays(r.ts,7))return false;
+  if(fTarikh==='month'&&!isThisMonth(r.ts))return false;
+  return true;
+ });
+ if(!recs.length){el.innerHTML='<div class="empty"><div class="e-ic">'+svg(ICONS.list,32)+'</div><div class="e-t">Tiada rekod dijumpai</div><div class="e-s">Tambah rekod baharu atau tukar penapis.</div></div>';return;}
+ el.innerHTML=recs.map(function(r){return recItemHTML(r,{actions:true});}).join('');
+}
+
+/* ---------------- CARTA GARIS (SVG) ---------------- */
+function chartSVG(series){
+ var W=328,H=158,padL=8,padR=8,padT=14,padB=24,n=series.length;
+ var max=1;series.forEach(function(s){if(s.value>max)max=s.value;});
+ var iw=W-padL-padR,ih=H-padT-padB;
+ var step=n>1?iw/(n-1):0;
+ var pts=series.map(function(s,i){var x=padL+(n>1?i*step:iw/2);var y=padT+ih-(s.value/max)*ih;return[x,y];});
+ var grid='';for(var g=0;g<=3;g++){var gy=padT+ih*g/3;grid+='<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="#eef2f0" stroke-width="1"/>';}
+ var line=pts.map(function(p,i){return(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join(' ');
+ var area=n>1?(line+' L'+pts[n-1][0].toFixed(1)+' '+(padT+ih)+' L'+pts[0][0].toFixed(1)+' '+(padT+ih)+' Z'):'';
+ var dots='',labels='';
+ pts.forEach(function(p,i){
+  var last=(i===n-1);
+  dots+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="'+(last?4.5:3)+'" fill="#0e7a43" stroke="#fff" stroke-width="2"/>';
+  if(series[i].value>0)labels+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]-8).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#0e7a43">'+series[i].value+'</text>';
+  labels+='<text x="'+p[0].toFixed(1)+'" y="'+(H-7)+'" text-anchor="middle" font-size="9.5" font-weight="700" fill="#93a89c">'+series[i].label+'</text>';
+ });
+ return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'
+   +'<defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0e7a43" stop-opacity="0.28"/><stop offset="1" stop-color="#0e7a43" stop-opacity="0"/></linearGradient></defs>'
+   +grid+(area?'<path d="'+area+'" fill="url(#cg)"/>':'')
+   +'<path d="'+line+'" fill="none" stroke="#0e7a43" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>'
+   +dots+labels
+ +'</svg>';
+}
+
+/* ---------------- RENDER: ANALISIS ---------------- */
+function renderAnalisis(){
+ var head=''
+  +'<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama"><span data-ic="back"></span></button><div class="hero-title">ANALISIS</div><div style="width:38px"></div></div>'
+    +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">Pantau kemajuan kelas & pelajar</div></div></div>';
+ var toggle=''
+  +'<div class="mode-toggle">'
+    +'<button class="'+(analysisMode==='kelas'?'on':'')+'" data-amode="kelas">'+svg(ICONS.users,15)+' Kelas</button>'
+    +'<button class="'+(analysisMode==='individu'?'on':'')+'" data-amode="individu">'+svg(ICONS.user,15)+' Individu</button>'
+  +'</div>';
+ var body=(analysisMode==='kelas')?analisisKelasHTML():analisisIndividuHTML();
+ document.getElementById('s-analisis').innerHTML=head+'<div class="pad" style="padding-top:16px">'+toggle+body+'</div>';
+ paintIcons(document.getElementById('s-analisis'));
+}
+
+function analisisKelasHTML(){
+ var cs=classStats();
+ var ranked=rankedStudents();
+ var maxMata=1;ranked.forEach(function(s){var m=studentTotal(s);if(m>maxMata)maxMata=m;});
+ var allRecs=classAllRecords();
+
+ var stat=function(icon,col,val,small,lbl){return '<div class="stat"><div class="s-ic" style="background:'+tint(col)+';color:'+col+'">'+svg(ICONS[icon],17)+'</div><div class="s-v">'+val+(small?(' <small>'+small+'</small>'):'')+'</div><div class="s-l">'+lbl+'</div></div>';};
+
+ var rankHTML=ranked.map(function(s,i){
+  var mata=studentTotal(s);
+  var w=Math.round(mata/maxMata*100);
+  return '<div class="rankrow"><div class="rk-i">'+(i+1)+'</div><div class="rk-n">'+esc(s.name)+'</div>'
+   +'<div class="rk-bar"><div class="rk-fill" style="width:'+Math.max(2,w)+'%"></div></div><div class="rk-v">'+mata+'</div></div>';
+ }).join('') || '<div style="text-align:center;color:var(--ink-3);font-size:12px;padding:12px">Belum ada pelajar.</div>';
+
+ // pecahan fasa keseluruhan kelas
+ var byPhase={};PHASE_ORDER.forEach(function(k){byPhase[k]=0;});
+ allRecs.forEach(function(r){byPhase[r.phase]+=recPoints(r);});
+ var maxP=1;PHASE_ORDER.forEach(function(k){if(byPhase[k]>maxP)maxP=byPhase[k];});
+ var brk=PHASE_ORDER.map(function(k){
+  var cnt=allRecs.filter(function(r){return r.phase===k;}).length;
+  var w=Math.round(byPhase[k]/maxP*100);
+  return '<div class="brk-item" style="--ac:'+PC[k]+'"><div class="brk-top"><div class="brk-name"><span class="d"></span>'+PHASES[k].label+'</div><div class="brk-val">'+cnt+' rekod · '+byPhase[k]+' mata</div></div><div class="brk-bar"><div class="brk-fill" style="width:'+w+'%"></div></div></div>';
+ }).join('');
+
+ var series=seriesFor(allRecs,'week');
+
+ return ''
+  +'<div class="stat-grid">'
+    +stat('users','#0e7a43',cs.n,'','Pelajar')
+    +stat('star','#c98908',cs.totalMata,'','Jumlah Mata')
+    +stat('trend','#5b54d6',cs.avgMata,'','Purata/Pelajar')
+    +stat('page','#ef8f1c',cs.totalPages,'m/s','Muka Surat')
+  +'</div>'
+  +'<div class="chart-card"><div class="chart-head"><div class="c-t">Kemajuan Kelas (7 Hari)</div><div class="c-legend">Mata</div></div><div class="chart-wrap">'+chartSVG(series)+'</div></div>'
+  +'<div class="section" style="margin-top:2px"><div class="sec-head"><div class="sec-title"><span data-ic="medal"></span> Ranking Pelajar</div></div><div class="chart-card" style="margin-bottom:15px">'+rankHTML+'</div></div>'
+  +'<div class="section" style="margin-top:2px"><div class="sec-head"><div class="sec-title"><span data-ic="layers"></span> Pecahan Fasa Kelas</div></div><div class="brk">'+(allRecs.length?brk:'<div style="text-align:center;color:var(--ink-3);font-size:12px;padding:10px">Tiada rekod lagi.</div>')+'</div></div>';
+}
+
+function analisisIndividuHTML(){
+ if(!state.students.length)return '<div class="empty"><div class="e-ic">'+svg(ICONS.user,32)+'</div><div class="e-t">Belum ada pelajar</div></div>';
+ if(!analysisStudentId||!studentById(analysisStudentId))analysisStudentId=state.activeId||state.students[0].id;
+ var s=studentById(analysisStudentId);
+ var picker='<select class="picker" id="ana-picker">'+rankedStudents().map(function(x){return '<option value="'+x.id+'"'+(x.id===analysisStudentId?' selected':'')+'>'+esc(x.name)+' — '+studentTotal(x)+' mata</option>';}).join('')+'</select>';
+
+ var range=currentTab;
+ var st=statsFor(s.records,range);
+ var series=seriesFor(s.records,range);
+ var tabTitle=range==='today'?'Graf Kemajuan Harian':range==='week'?'Graf Kemajuan Mingguan':'Graf Kemajuan Bulanan';
+
+ var byPhase={};PHASE_ORDER.forEach(function(k){byPhase[k]=0;});
+ st.recs.forEach(function(r){byPhase[r.phase]+=recPoints(r);});
+ var maxP=1;PHASE_ORDER.forEach(function(k){if(byPhase[k]>maxP)maxP=byPhase[k];});
+ var brk=PHASE_ORDER.map(function(k){
+  var cnt=st.recs.filter(function(r){return r.phase===k;}).length;
+  var w=Math.round(byPhase[k]/maxP*100);
+  return '<div class="brk-item" style="--ac:'+PC[k]+'"><div class="brk-top"><div class="brk-name"><span class="d"></span>'+PHASES[k].label+'</div><div class="brk-val">'+cnt+' rekod · '+byPhase[k]+' mata</div></div><div class="brk-bar"><div class="brk-fill" style="width:'+w+'%"></div></div></div>';
+ }).join('');
+
+ var stat=function(icon,col,val,small,lbl){return '<div class="stat"><div class="s-ic" style="background:'+tint(col)+';color:'+col+'">'+svg(ICONS[icon],17)+'</div><div class="s-v">'+val+(small?(' <small>'+small+'</small>'):'')+'</div><div class="s-l">'+lbl+'</div></div>';};
+
+ var rank=rankedStudents().map(function(x){return x.id;}).indexOf(s.id)+1;
+
+ return picker
+  +'<div class="stat-grid">'
+    +stat('star','#0e7a43',mataOf(s.records),'','Jumlah Mata')
+    +stat('medal','#c98908','#'+rank,'','Kedudukan Kelas')
+    +stat('page','#ef8f1c',pagesOf(s.records),'m/s','Muka Surat')
+    +stat('fire','#dc2f6e',streakOf(s.records),'hari','Streak')
+  +'</div>'
+  +'<div class="tabs">'
+    +'<button class="'+(range==='today'?'on':'')+'" data-tab="today">Harian</button>'
+    +'<button class="'+(range==='week'?'on':'')+'" data-tab="week">Mingguan</button>'
+    +'<button class="'+(range==='month'?'on':'')+'" data-tab="month">Bulanan</button>'
+  +'</div>'
+  +'<div class="chart-card"><div class="chart-head"><div class="c-t">'+tabTitle+'</div><div class="c-legend">Mata</div></div><div class="chart-wrap">'+chartSVG(series)+'</div></div>'
+  +'<div class="section" style="margin-top:2px"><div class="sec-head"><div class="sec-title"><span data-ic="layers"></span> Pecahan Fasa</div></div><div class="brk">'+(st.recs.length?brk:'<div style="text-align:center;color:var(--ink-3);font-size:12px;padding:10px">Tiada rekod dalam tempoh ini.</div>')+'</div></div>'
+  +'<button class="btn btn-gold btn-block" data-report-student="'+s.id+'" style="margin-top:15px">'+svg(ICONS.report,17)+' Jana Laporan '+esc(s.name.split(' ')[0])+'</button>';
+}
+
+/* ---------------- RENDER: LAPORAN ---------------- */
+function renderLaporan(){
+ var studOpts=rankedStudents().map(function(s){return '<option value="'+s.id+'">'+esc(s.name)+'</option>';}).join('');
+ document.getElementById('s-laporan').innerHTML=''
+  +'<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama"><span data-ic="back"></span></button><div class="hero-title">LAPORAN PDF</div><div style="width:38px"></div></div>'
+    +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">Jana & simpan laporan sebagai PDF</div></div></div>'
+  +'<div class="pad" style="padding-top:16px">'
+    +'<div class="rep-opt">'
+      +'<div class="ro-ic" style="background:linear-gradient(135deg,#12844b,#0b4429)">'+svg(ICONS.users,24)+'</div>'
+      +'<div class="ro-body"><div class="ro-t">Laporan Keseluruhan Kelas</div>'
+        +'<div class="ro-d">Ringkasan kelas, jadual ranking semua pelajar, pecahan fasa & graf kemajuan mingguan.</div>'
+        +'<div class="ro-act"><button class="btn btn-primary sm" data-action="report-class">'+svg(ICONS.print,15)+' Jana PDF Kelas</button></div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="rep-opt">'
+      +'<div class="ro-ic" style="background:linear-gradient(135deg,#ffcf5e,#f6b32b)">'+svg(ICONS.user,24)+'</div>'
+      +'<div class="ro-body"><div class="ro-t">Laporan Individu Pelajar</div>'
+        +'<div class="ro-d">Butiran seorang pelajar: statistik, pecahan fasa, senarai rekod penuh & ruang tandatangan.</div>'
+        +'<div class="ro-act" style="flex-direction:column;align-items:stretch">'
+          +'<select class="picker" id="rep-student" style="margin-bottom:9px">'+studOpts+'</select>'
+          +'<button class="btn btn-gold sm" data-action="report-one">'+svg(ICONS.print,15)+' Jana PDF Pelajar</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+    +'<div class="rep-opt">'
+      +'<div class="ro-ic" style="background:linear-gradient(135deg,#7c74e6,#5b54d6)">'+svg(ICONS.report,24)+'</div>'
+      +'<div class="ro-body"><div class="ro-t">Laporan Semua Individu (Sekali Gus)</div>'
+        +'<div class="ro-d">Satu dokumen mengandungi laporan penuh setiap pelajar, satu muka surat setiap seorang.</div>'
+        +'<div class="ro-act"><button class="btn btn-line sm" data-action="report-all-ind">'+svg(ICONS.print,15)+' Jana PDF Semua</button></div>'
+      +'</div>'
+    +'</div>'
+    +'<p class="hint">Selepas tekan "Jana", dialog cetakan akan terbuka. Pilih <b>"Simpan sebagai PDF"</b> (Save as PDF) sebagai destinasi untuk memuat turun fail PDF.</p>'
+  +'</div>';
+ paintIcons(document.getElementById('s-laporan'));
+}
+
+/* ---------------- RENDER: TETAPAN ---------------- */
+function renderTetapan(){
+ var K=state.klass, cs=classStats();
+ document.getElementById('pf-av').textContent=initials(K.name)||'K';
+ document.getElementById('pf-name').textContent=K.name||'Kelas';
+ document.getElementById('pf-sub').textContent=(K.guru?('Guru: '+K.guru):'-')+(K.tahun?('  ·  '+K.tahun):'');
+ document.getElementById('in-kelas').value=K.name||'';
+ document.getElementById('in-guru').value=K.guru||'';
+ document.getElementById('in-sekolah').value=K.sekolah||'';
+ document.getElementById('in-tahun').value=K.tahun||'';
+ document.getElementById('in-target').value=state.target||5;
+
+ document.getElementById('pf-stats').innerHTML=''
+  +'<div class="pstat"><div class="v">'+cs.n+'</div><div class="l">Pelajar</div></div>'
+  +'<div class="pstat"><div class="v">'+cs.totalMata+'</div><div class="l">Jumlah Mata</div></div>'
+  +'<div class="pstat"><div class="v">'+cs.totalRecs+'</div><div class="l">Rekod</div></div>'
+  +'<div class="pstat"><div class="v">'+cs.totalPages+'</div><div class="l">Muka Surat</div></div>';
+
+ document.getElementById('student-manage').innerHTML=state.students.length?state.students.slice().sort(function(a,b){return (a.no||0)-(b.no||0);}).map(function(s){
+  return '<div class="row"><div class="row-ic" style="background:'+avatarColor(s.id)+';color:#fff">'+esc(initials(s.name))+'</div>'
+   +'<div class="row-body"><div class="row-t">'+esc(s.name)+'</div><div class="row-s">No. '+(s.no||'-')+' · '+s.records.length+' rekod · '+studentTotal(s)+' mata</div></div>'
+   +'<div class="row-r"><button class="icon-btn" data-action="edit-student" data-id="'+s.id+'" aria-label="Sunting">'+svg(ICONS.edit,14)+'</button>'
+   +'<button class="icon-btn del" data-action="del-student" data-id="'+s.id+'" aria-label="Padam">'+svg(ICONS.trash,14)+'</button></div></div>';
+ }).join(''):'<div class="row"><div class="row-body"><div class="row-s" style="padding:6px 0">Belum ada pelajar. Tekan "Tambah".</div></div></div>';
+
+ document.getElementById('pts-settings').innerHTML=PHASE_ORDER.map(function(k){
+  var P=PHASES[k];
+  return '<div class="row"><div class="row-ic" style="background:'+tint(PC[k])+';color:'+PC[k]+'">'+svg(ICONS[P.icon],19)+'</div>'
+   +'<div class="row-body"><div class="row-t">'+P.label+'</div><div class="row-s">Mata bagi setiap rekod</div></div>'
+   +'<div class="row-r"><div class="pts-edit"><input class="num" type="number" min="0" max="999" data-pts="'+k+'" value="'+pointsFor(k)+'"></div></div></div>';
+ }).join('');
+ paintIcons(document.getElementById('s-tetapan'));
+}
+
+/* ---------------- MODAL PELAJAR ---------------- */
+function openStudentModal(id){
+ editingStudentId=id||null;
+ var s=id?studentById(id):null;
+ document.getElementById('sm-title').textContent=id?'Sunting Pelajar':'Tambah Pelajar';
+ document.getElementById('sm-name').value=s?s.name:'';
+ document.getElementById('sm-no').value=s?(s.no||''):(state.students.length+1);
+ document.getElementById('studentModal').classList.add('on');
+ setTimeout(function(){try{document.getElementById('sm-name').focus();}catch(e){}},60);
+}
+function closeStudentModal(){document.getElementById('studentModal').classList.remove('on');editingStudentId=null;}
+function saveStudentModal(){
+ var name=document.getElementById('sm-name').value.trim();
+ var no=parseInt(document.getElementById('sm-no').value,10);
+ if(!name){toast('Sila masukkan nama pelajar.',false);shake('sm-name');return;}
+ if(isNaN(no)||no<1)no=state.students.length+1;
+ if(editingStudentId){
+  var s=studentById(editingStudentId);
+  if(s){s.name=name;s.no=no;}
+  toast('Maklumat pelajar dikemaskini.',true);
+ }else{
+  var ns={id:uid(),no:no,name:name,records:[],meta:{created:Date.now()}};
+  state.students.push(ns);
+  if(!state.activeId)state.activeId=ns.id;
+  toast('Pelajar ditambah.',true);
+ }
+ saveState();closeStudentModal();renderAll();
+ if(document.getElementById('s-tetapan').classList.contains('on'))renderTetapan();
+ if(document.getElementById('s-pelajar').classList.contains('on'))renderStudents();
+}
+function delStudent(id){
+ var s=studentById(id);if(!s)return;
+ if(!confirm('Padam pelajar "'+s.name+'" dan semua rekodnya? Tindakan ini tidak boleh dibatalkan.'))return;
+ state.students=state.students.filter(function(x){return x.id!==id;});
+ if(state.activeId===id)state.activeId=state.students.length?state.students[0].id:null;
+ saveState();renderAll();
+ if(document.getElementById('s-tetapan').classList.contains('on'))renderTetapan();
+ if(document.getElementById('s-pelajar').classList.contains('on'))renderStudents();
+ toast('Pelajar dipadam.',true);
+}
+
+/* ---------------- RENDER ALL & NAV ---------------- */
+function renderAll(){renderHome();renderRekodHeader();renderList();refreshFasaSave();}
+function navTo(name){
+ ['utama','pelajar','rekod','analisis','laporan','tetapan'].forEach(function(n){var s=document.getElementById('s-'+n);if(s)s.classList.toggle('on',n===name);});
+ document.querySelectorAll('.nav-item').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-nav')===name);});
+ if(name==='utama')renderHome();
+ else if(name==='pelajar')renderStudents();
+ else if(name==='analisis')renderAnalisis();
+ else if(name==='laporan')renderLaporan();
+ else if(name==='tetapan')renderTetapan();
+ else if(name==='rekod'){renderRekodHeader();if(document.getElementById('view-saya').classList.contains('on'))renderList();}
+ document.getElementById('content').scrollTop=0;
+}
+function setSeg(seg){
+ document.querySelectorAll('.seg button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-seg')===seg);});
+ document.getElementById('view-baru').classList.toggle('on',seg==='baru');
+ document.getElementById('view-saya').classList.toggle('on',seg==='saya');
+ if(seg==='saya')renderList();
+}
+function setSaveLabel(){
+ var b=document.getElementById('f-save');
+ b.innerHTML=svg(ICONS.save,18)+' '+(editingId?'Kemaskini Rekod':'Simpan Rekod')+' <span id="f-pts"></span>';
+ refreshFasaSave();
+}
+function startRecordFor(phase){
+ if(!activeStudent()){toast('Sila pilih pelajar dahulu.',false);navTo('pelajar');return;}
+ editingId=null;setSaveLabel();
+ navTo('rekod');setSeg('baru');
+ if(phase&&PHASES[phase])selectPhase(phase);
+ var f=document.getElementById('f-page');try{f.focus({preventScroll:true});}catch(e){try{f.focus();}catch(_){}}
+ document.getElementById('content').scrollTop=0;
+}
+function resetForm(){document.getElementById('f-page').value='';document.getElementById('f-note').value='';updateAuto();}
+
+/* ---------------- SIMPAN / SUNTING / PADAM REKOD ---------------- */
+function shake(id){var el=document.getElementById(id);if(!el)return;el.style.borderColor='var(--danger)';el.style.background='var(--danger-soft)';setTimeout(function(){el.style.borderColor='';el.style.background='';},900);}
+function saveRecord(){
+ var s=activeStudent();
+ if(!s){toast('Sila pilih pelajar dahulu.',false);navTo('pelajar');return;}
+ var p=parsePages(document.getElementById('f-page').value);
+ if(!p){toast('Sila masukkan muka surat.',false);shake('f-page');return;}
+ if(p.invalid){toast('Muka surat tidak sah (1 – 604).',false);shake('f-page');return;}
+ if(!currentPhase){toast('Sila pilih fasa.',false);return;}
+ var note=document.getElementById('f-note').value;
+ if(editingId){
+  var r=s.records.filter(function(x){return x.id===editingId;})[0];
+  if(r){r.start=p.start;r.end=p.end;r.phase=currentPhase;r.note=(note||'').trim();}
+  saveState();editingId=null;resetForm();setSaveLabel();renderAll();
+  toast('Rekod dikemaskini.',true);navTo('rekod');setSeg('saya');
+  return;
+ }
+ var pts=pointsFor(currentPhase),label=PHASES[currentPhase].label;
+ addRecord(s,{phase:currentPhase,start:p.start,end:p.end,note:note});
+ resetForm();renderAll();
+ popPoints(pts);toastWin(pts,label);
+}
+function loadEdit(id){
+ var s=activeStudent();if(!s)return;
+ var r=s.records.filter(function(x){return x.id===id;})[0];if(!r)return;
+ editingId=id;
+ navTo('rekod');setSeg('baru');
+ document.getElementById('f-page').value=(r.start===r.end)?String(r.start):(r.start+'-'+r.end);
+ document.getElementById('f-note').value=r.note||'';
+ selectPhase(r.phase);updateAuto();setSaveLabel();
+ document.getElementById('content').scrollTop=0;
+ toast('Menyunting rekod — ubah lalu tekan Kemaskini.',true);
+}
+function doDelete(id){
+ var s=activeStudent();if(!s)return;
+ if(confirm('Padam rekod ini?')){deleteRecord(s,id);renderAll();if(document.getElementById('view-saya').classList.contains('on'))renderList();toast('Rekod dipadam.',true);}
+}
+function doReset(){
+ if(confirm('Padam SEMUA pelajar dan rekod, set semula kepada asal? Tindakan ini tidak boleh dibatalkan.')){
+  try{localStorage.removeItem(LS_KEY);}catch(e){}memFallback=null;
+  state=defaultState();state.activeId=state.students.length?state.students[0].id:null;saveState();
+  renderAll();toast('Sistem telah diset semula.',true);navTo('utama');
+ }
+}
+
+/* ---------------- DATA: EKSPORT / IMPORT ---------------- */
+function exportData(){
+ try{
+  var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='myua-kelas-'+dayKey(Date.now())+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},1200);
+  toast('Data kelas dimuat turun.',true);
+ }catch(e){toast('Gagal memuat turun.',false);}
+}
+function onImportFile(e){
+ var file=e.target.files&&e.target.files[0];if(!file){return;}
+ var rd=new FileReader();
+ rd.onload=function(){
+  try{
+   var d=JSON.parse(rd.result);
+   if(!d||typeof d!=='object')throw new Error('x');
+   // Sokong import fail lama (single student) juga
+   if(!d.students&&d.profile){d={klass:{name:d.profile.kelas,guru:d.profile.guru},points:d.points,target:d.target,students:[{id:uid(),no:1,name:d.profile.name,records:d.records||[]}]};}
+   state=normalizeState(d);
+   if(!state.activeId&&state.students.length)state.activeId=state.students[0].id;
+   saveState();renderAll();toast('Data berjaya diimport.',true);navTo('utama');
+  }catch(err){toast('Fail tidak sah.',false);}
+  e.target.value='';
+ };
+ rd.readAsText(file);
+}
+function onKlassInput(){
+ state.klass.name=document.getElementById('in-kelas').value;
+ state.klass.guru=document.getElementById('in-guru').value;
+ state.klass.sekolah=document.getElementById('in-sekolah').value;
+ state.klass.tahun=document.getElementById('in-tahun').value;
+ saveState();
+ document.getElementById('pf-av').textContent=initials(state.klass.name)||'K';
+ document.getElementById('pf-name').textContent=state.klass.name||'Kelas';
+ document.getElementById('pf-sub').textContent=(state.klass.guru?('Guru: '+state.klass.guru):'-')+(state.klass.tahun?('  ·  '+state.klass.tahun):'');
+ renderRekodHeader();
+}
+function onTargetChange(){var v=parseInt(this.value,10);if(!v||v<1)v=5;if(v>50)v=50;this.value=v;state.target=v;saveState();}
+
+/* =================================================================
+   LAPORAN PDF  (guna cetakan pelayar → "Simpan sebagai PDF")
+   ================================================================= */
+function repLogo(){return '<svg class="rp-logo" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="rgba(255,255,255,.16)"/><path d="M24 15c-3.4-2.6-8-2.6-11-1.6v20c3-1 7.6-1 11 1.6 3.4-2.6 8-2.6 11-1.6v-20c-3-1-7.6-1-11 1.6z" fill="none" stroke="#b6e072" stroke-width="2.4" stroke-linejoin="round"/><path d="M24 16.6v18.4" stroke="#b6e072" stroke-width="2.4"/></svg>';}
+function repHeader(sub){
+ var K=state.klass;
+ return '<div class="rp-head">'+repLogo()
+  +'<div><div class="rp-brand">My<span class="go">UA</span></div><div class="rp-tag">'+esc(sub||'Sistem Rekod Hafazan al-Quran')+'</div></div>'
+  +'<div class="rp-meta">'+(K.sekolah?esc(K.sekolah)+'<br>':'')+'Dijana: '+fmtDate(Date.now())+'<br>'+fmtTime(Date.now())+'</div>'
+ +'</div>';
+}
+function repInfo(rows){return '<div class="rp-info">'+rows.map(function(r){return '<div>'+r[0]+': <b>'+esc(r[1])+'</b></div>';}).join('')+'</div>';}
+function repKpi(items){return '<div class="rp-kpis">'+items.map(function(it){return '<div class="rp-kpi"><div class="v">'+it[0]+'</div><div class="l">'+esc(it[1])+'</div></div>';}).join('')+'</div>';}
+function repChart(series,title){return '<div class="rp-sec-t">'+svg(ICONS.trend,15)+' '+esc(title)+'</div><div class="rp-chart-wrap">'+chartSVG(series)+'</div>';}
+function repPhaseBreak(recs){
+ var byPhase={};PHASE_ORDER.forEach(function(k){byPhase[k]=0;});
+ recs.forEach(function(r){byPhase[r.phase]+=recPoints(r);});
+ var maxP=1;PHASE_ORDER.forEach(function(k){if(byPhase[k]>maxP)maxP=byPhase[k];});
+ return '<div class="rp-brk">'+PHASE_ORDER.map(function(k){
+  var cnt=recs.filter(function(r){return r.phase===k;}).length;
+  var w=Math.round(byPhase[k]/maxP*100);
+  return '<div class="rp-brk-item"><div class="rp-brk-top"><span>'+PHASES[k].label+'</span><span>'+cnt+' rekod · '+byPhase[k]+' mata</span></div><div class="rp-brk-bar"><div class="rp-brk-fill" style="width:'+Math.max(2,w)+'%;background:'+PC[k]+'"></div></div></div>';
+ }).join('')+'</div>';
+}
+
+function buildClassReport(){
+ var K=state.klass, cs=classStats();
+ var ranked=rankedStudents();
+ var allRecs=classAllRecords();
+ var rows=ranked.map(function(s,i){
+  var mata=studentTotal(s);
+  var streak=streakOf(s.records);
+  var last=s.records.length?fmtDate(sortRecs(s.records)[0].ts):'-';
+  return '<tr class="'+(i<3?'top':'')+'"><td class="c">'+(i+1)+'</td><td>'+esc(s.name)+'</td>'
+   +'<td class="c">'+s.records.length+'</td><td class="c">'+pagesOf(s.records)+'</td>'
+   +'<td class="c">'+streak+'</td><td class="c">'+last+'</td><td class="r">'+mata+'</td></tr>';
+ }).join('');
+
+ return '<div class="report">'+repHeader('Laporan Prestasi Kelas Hafazan')
+  +'<div class="rp-body">'
+   +'<div class="rp-title">Laporan Keseluruhan Kelas</div>'
+   +'<div class="rp-titsub">Ringkasan prestasi hafazan al-Quran bagi semua pelajar</div>'
+   +repInfo([['Kelas',K.name||'-'],['Guru',K.guru||'-'],['Tahun / Sesi',K.tahun||'-'],['Bilangan Pelajar',String(cs.n)]])
+   +repKpi([[cs.totalMata,'Jumlah Mata'],[cs.avgMata,'Purata/Pelajar'],[cs.totalPages+'','Muka Surat'],[cs.totalRecs+'','Jumlah Rekod']])
+   +'<div class="rp-sec-t">'+svg(ICONS.medal,15)+' Jadual Ranking Pelajar</div>'
+   +'<table class="rp-tbl"><thead><tr><th class="c">#</th><th>Nama Pelajar</th><th class="c">Rekod</th><th class="c">M/S</th><th class="c">Streak</th><th class="c">Aktiviti Akhir</th><th class="r">Mata</th></tr></thead><tbody>'+rows+'</tbody></table>'
+   +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa (Keseluruhan Kelas)</div>'
+   +repPhaseBreak(allRecs)
+   +repChart(seriesFor(allRecs,'week'),'Kemajuan Mata Kelas (7 Hari Terakhir)')
+   +'<div class="rp-sign"><div><div class="ln"></div>Tandatangan Guru</div><div><div class="ln"></div>Tandatangan Penyelia</div></div>'
+   +'<div class="rp-note">Laporan ini dijana secara automatik oleh sistem MyUA — Sistem Rekod Hafazan al-Quran.<br>Mata dikira berdasarkan tetapan fasa semasa. © MyUA '+new Date().getFullYear()+'</div>'
+  +'</div></div>';
+}
+
+function buildStudentReport(s,pageBreak){
+ var K=state.klass;
+ var recs=sortRecs(s.records);
+ var rank=rankedStudents().map(function(x){return x.id;}).indexOf(s.id)+1;
+ var rowHTML=recs.length?recs.map(function(r){
+  return '<tr><td class="c">'+fmtDate(r.ts)+'</td><td><span class="rp-badge" style="background:'+PC[r.phase]+'">'+PHASES[r.phase].label+'</span></td>'
+   +'<td class="c">'+(r.start===r.end?('M/S '+r.start):('M/S '+r.start+'–'+r.end))+'</td>'
+   +'<td class="c">'+juzLabel(r.start,r.end).replace('Juz ','J')+'</td>'
+   +'<td>'+esc(surahLabel(r.start,r.end))+'</td>'
+   +'<td>'+esc(r.note||'-')+'</td><td class="r">'+recPoints(r)+'</td></tr>';
+ }).join(''):'<tr><td colspan="7" style="text-align:center;color:#93a89c;padding:14px">Tiada rekod hafazan lagi.</td></tr>';
+
+ return '<div class="report'+(pageBreak?' page-break':'')+'">'+repHeader('Laporan Prestasi Individu')
+  +'<div class="rp-body">'
+   +'<div class="rp-title">'+esc(s.name)+'</div>'
+   +'<div class="rp-titsub">Laporan kemajuan hafazan al-Quran individu</div>'
+   +repInfo([['Kelas',K.name||'-'],['Guru',K.guru||'-'],['No. Pelajar',String(s.no||'-')],['Kedudukan Kelas','#'+rank+' daripada '+state.students.length]])
+   +repKpi([[mataOf(s.records),'Jumlah Mata'],[pagesOf(s.records)+'','Muka Surat'],[s.records.length+'','Jumlah Rekod'],[streakOf(s.records)+'','Hari Streak']])
+   +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa</div>'
+   +repPhaseBreak(s.records)
+   +repChart(seriesFor(s.records,'week'),'Kemajuan Mata (7 Hari Terakhir)')
+   +'<div class="rp-sec-t">'+svg(ICONS.list,15)+' Senarai Rekod Hafazan ('+recs.length+')</div>'
+   +'<table class="rp-tbl"><thead><tr><th class="c">Tarikh</th><th>Fasa</th><th class="c">Muka Surat</th><th class="c">Juz</th><th>Surah</th><th>Catatan</th><th class="r">Mata</th></tr></thead><tbody>'+rowHTML+'</tbody></table>'
+   +'<div class="rp-sign"><div><div class="ln"></div>Tandatangan Guru</div><div><div class="ln"></div>Tandatangan Ibu Bapa / Penjaga</div></div>'
+   +'<div class="rp-note">Laporan ini dijana secara automatik oleh sistem MyUA.<br>© MyUA '+new Date().getFullYear()+'</div>'
+  +'</div></div>';
+}
+
+function printHTML(html,titleName){
+ var root=document.getElementById('printRoot');
+ root.innerHTML=html;
+ var oldTitle=document.title;
+ document.title=titleName||('MyUA Laporan '+dayKey(Date.now()));
+ toast('Membuka dialog cetak — pilih "Simpan sebagai PDF".',true);
+ setTimeout(function(){
+  window.print();
+  setTimeout(function(){document.title=oldTitle;root.innerHTML='';},600);
+ },260);
+}
+function reportClass(){printHTML(buildClassReport(),'MyUA Laporan Kelas '+(state.klass.name||''));}
+function reportStudent(id){var s=studentById(id);if(!s){toast('Pelajar tidak dijumpai.',false);return;}printHTML(buildStudentReport(s,false),'MyUA Laporan '+s.name);}
+function reportAllIndividual(){
+ if(!state.students.length){toast('Tiada pelajar.',false);return;}
+ var html=rankedStudents().map(function(s,i){return buildStudentReport(s,i>0);}).join('');
+ printHTML(html,'MyUA Laporan Semua Pelajar');
+}
+
+/* ---------------- TOAST & KESAN ---------------- */
+function pushToast(html,cls){
+ var wrap=document.getElementById('toasts');
+ var el=document.createElement('div');el.className='toast'+(cls?(' '+cls):'');el.innerHTML=html;
+ wrap.appendChild(el);
+ setTimeout(function(){el.classList.add('out');setTimeout(function(){if(el.parentNode)el.remove();},320);},2600);
+}
+function toast(msg,ok){pushToast(svg(ICONS[ok?'check':'flash'],18)+'<span>'+esc(msg)+'</span>');}
+function toastWin(pts,label){pushToast(svg(ICONS.trophy,18)+'<span>Rekod '+esc(label)+' disimpan!</span><span class="t-pts">+'+pts+'</span>','win');}
+function popPoints(pts){var el=document.getElementById('pop');el.textContent='+'+pts;el.classList.remove('go');void el.offsetWidth;el.classList.add('go');setTimeout(function(){el.classList.remove('go');},1000);}
+
+/* ---------------- IMBAS QR ---------------- */
+var scanStream=null,scanRAF=null,scanDetector=null,scanActive=false;
+function openScan(){
+ if(!activeStudent()){toast('Sila pilih pelajar dahulu.',false);navTo('pelajar');return;}
+ var sub=document.getElementById('scanSub');if(sub)sub.textContent='Merekod untuk: '+(activeStudent().name||'');
+ document.getElementById('scanOverlay').classList.add('on');startScanner();
+}
+function closeScan(){document.getElementById('scanOverlay').classList.remove('on');stopScanner();}
+function stopScanner(){scanActive=false;if(scanRAF){cancelAnimationFrame(scanRAF);scanRAF=null;}if(scanStream){scanStream.getTracks().forEach(function(t){t.stop();});scanStream=null;}}
+function scanFallbackUI(msg){document.getElementById('scanView').innerHTML='<div class="scan-fallback">'+svg(ICONS.scan,44)+'<div style="font-weight:800;color:#e7f4ea;margin:8px 0 4px">Imbasan kamera tidak tersedia</div><div style="font-size:12px">'+esc(msg||'Sila gunakan Isi Manual di bawah.')+'</div></div>';}
+function startScanner(){
+ var view=document.getElementById('scanView');
+ if(!('BarcodeDetector' in window)){scanFallbackUI('Pelayar ini tidak menyokong imbasan QR (cth: Safari iOS). Gunakan Isi Manual.');return;}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scanFallbackUI('Kamera tidak boleh diakses pada peranti ini.');return;}
+ view.innerHTML='<video playsinline muted autoplay></video><div class="scan-frame"></div><div class="scan-line"></div><div class="scan-note">Mengesan kod QR...</div>';
+ var video=view.querySelector('video');
+ try{scanDetector=new window.BarcodeDetector({formats:['qr_code']});}catch(e){try{scanDetector=new window.BarcodeDetector();}catch(_){scanFallbackUI('Pengesan QR tidak tersedia.');return;}}
+ navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}).then(function(stream){
+  scanStream=stream;video.srcObject=stream;scanActive=true;video.play().catch(function(){});
+  var loop=function(){
+   if(!scanActive)return;
+   scanDetector.detect(video).then(function(codes){
+    if(codes&&codes.length){onScanResult(codes[0].rawValue);return;}
+    scanRAF=requestAnimationFrame(loop);
+   }).catch(function(){scanRAF=requestAnimationFrame(loop);});
+  };
+  scanRAF=requestAnimationFrame(loop);
+ }).catch(function(){scanFallbackUI('Keizinan kamera ditolak. Gunakan Isi Manual.');});
+}
+function normPhase(s){s=String(s||'').toLowerCase();if(PHASES[s])return s;if(s.indexOf('talaq')>=0)return 'talaqqi';if(s.indexOf('hafaz')>=0||s.indexOf('baharu')>=0||s.indexOf('baru')>=0)return 'hafazan';if(s.indexOf('muraj')>=0)return 'murajaah';if(s.indexOf('tasmi')>=0)return 'tasmik';if(s.indexOf('tahrir')>=0)return 'tahriri';return null;}
+function parseScan(txt){
+ txt=String(txt||'').trim();
+ var m=txt.match(/(?:MYUA|HAFAZANGO)[\s:|,_-]+([A-Za-z]+)[\s:|,_-]+(\d{1,3})(?:[\s:|,_–—-]+(\d{1,3}))?/i);
+ if(m){return {phase:normPhase(m[1]),start:+m[2],end:m[3]?+m[3]:+m[2]};}
+ m=txt.match(/^(\d{1,3})\s*[-–—]\s*(\d{1,3})$/);
+ if(m)return {start:+m[1],end:+m[2]};
+ m=txt.match(/^(\d{1,3})$/);
+ if(m)return {start:+m[1],end:+m[1]};
+ return null;
+}
+function onScanResult(raw){
+ var d=parseScan(raw);stopScanner();closeScan();
+ if(!d){toast('QR tidak dikenali.',false);return;}
+ if(d.start>d.end){var t=d.start;d.start=d.end;d.end=t;}
+ if(d.start<1||d.end>TOTAL_PAGES){toast('Julat muka surat dalam QR tidak sah.',false);return;}
+ editingId=null;setSaveLabel();
+ navTo('rekod');setSeg('baru');
+ if(d.phase)selectPhase(d.phase);
+ document.getElementById('f-page').value=(d.start===d.end)?String(d.start):(d.start+'-'+d.end);
+ updateAuto();document.getElementById('content').scrollTop=0;
+ toast('QR diimbas — semak & simpan rekod.',true);
+}
+
+/* ---------------- PENGENDALI ACARA ---------------- */
+document.addEventListener('click',function(e){
+ var el=e.target.closest('[data-nav],[data-seg],[data-tab],[data-action],[data-phase],[data-phase-chip],[data-open-student],[data-amode],[data-report-student]');
+ if(!el)return;
+ if(el.hasAttribute('data-nav')){navTo(el.getAttribute('data-nav'));return;}
+ if(el.hasAttribute('data-seg')){setSeg(el.getAttribute('data-seg'));return;}
+ if(el.hasAttribute('data-tab')){currentTab=el.getAttribute('data-tab');renderAnalisis();return;}
+ if(el.hasAttribute('data-amode')){analysisMode=el.getAttribute('data-amode');renderAnalisis();return;}
+ if(el.hasAttribute('data-open-student')){openStudent(el.getAttribute('data-open-student'));return;}
+ if(el.hasAttribute('data-report-student')){navTo('laporan');reportStudent(el.getAttribute('data-report-student'));return;}
+ if(el.hasAttribute('data-phase-chip')){selectPhase(el.getAttribute('data-phase-chip'));return;}
+ if(el.hasAttribute('data-phase')){startRecordFor(el.getAttribute('data-phase'));return;}
+ switch(el.getAttribute('data-action')){
+  case 'scan':openScan();break;
+  case 'scan-close':closeScan();break;
+  case 'scan-manual':closeScan();startRecordFor(currentPhase);break;
+  case 'edit':loadEdit(el.getAttribute('data-id'));break;
+  case 'del':doDelete(el.getAttribute('data-id'));break;
+  case 'add-student':openStudentModal(null);break;
+  case 'edit-student':openStudentModal(el.getAttribute('data-id'));break;
+  case 'del-student':delStudent(el.getAttribute('data-id'));break;
+  case 'modal-close':closeStudentModal();break;
+  case 'report-class':reportClass();break;
+  case 'report-one':reportStudent(document.getElementById('rep-student').value);break;
+  case 'report-all-ind':reportAllIndividual();break;
+  case 'export':exportData();break;
+  case 'import':document.getElementById('import-file').click();break;
+  case 'reset':doReset();break;
+ }
+});
+document.addEventListener('change',function(e){
+ var el=e.target;
+ if(el&&el.id==='ana-picker'){analysisStudentId=el.value;renderAnalisis();return;}
+ if(el&&el.getAttribute&&el.getAttribute('data-pts')!=null){
+  var k=el.getAttribute('data-pts'),v=parseInt(el.value,10);
+  if(isNaN(v)||v<0)v=0;if(v>999)v=999;el.value=v;
+  state.points[k]=v;saveState();refreshFasaSave();
+  if(document.getElementById('s-utama').classList.contains('on'))renderHome();
+  if(document.getElementById('s-analisis').classList.contains('on'))renderAnalisis();
+ }
+});
+document.getElementById('scanOverlay').addEventListener('click',function(e){if(e.target===this)closeScan();});
+document.getElementById('studentModal').addEventListener('click',function(e){if(e.target===this)closeStudentModal();});
+
+/* ---------------- INIT ---------------- */
+function init(){
+ loadState();
+ paintIcons(document);
+ buildFasaGrid();
+ var ff=document.getElementById('filter-fasa');
+ PHASE_ORDER.forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=PHASES[k].label;ff.appendChild(o);});
+ selectPhase(currentPhase);
+ setSaveLabel();
+ renderAll();
+ document.getElementById('f-page').addEventListener('input',updateAuto);
+ document.getElementById('f-page').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();saveRecord();}});
+ document.getElementById('f-save').addEventListener('click',saveRecord);
+ document.getElementById('filter-fasa').addEventListener('change',renderList);
+ document.getElementById('filter-tarikh').addEventListener('change',renderList);
+ document.getElementById('in-kelas').addEventListener('input',onKlassInput);
+ document.getElementById('in-guru').addEventListener('input',onKlassInput);
+ document.getElementById('in-sekolah').addEventListener('input',onKlassInput);
+ document.getElementById('in-tahun').addEventListener('input',onKlassInput);
+ document.getElementById('in-target').addEventListener('change',onTargetChange);
+ document.getElementById('import-file').addEventListener('change',onImportFile);
+ document.getElementById('sm-save').addEventListener('click',saveStudentModal);
+ document.getElementById('sm-name').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();saveStudentModal();}});
+ navTo('utama');
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
+</script>
+</body>
+</html>
