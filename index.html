@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#4a1020">
-<meta name="description" content="MyUA — Sistem rekod hafazan al-Quran untuk kelas: urus pelajar, analisis kelas & individu, jana laporan PDF.">
+<meta name="description" content="MyUA — Sistem rekod hafazan al-Quran untuk kelas: urus pelajar, analisis kelas & individu, jana laporan PDF keseluruhan & bulanan.">
 <title>MyUA — Sistem Rekod Hafazan Ulul Albab</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%236d1b30'/%3E%3Cpath d='M50 26c-7-6-17-6-24-4v46c7-2 17-2 24 4 7-6 17-6 24-4V22c-7-2-17-2-24 4z' fill='none' stroke='%23d4af37' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M50 30v42' stroke='%23d4af37' stroke-width='4'/%3E%3C/svg%3E">
@@ -411,6 +411,19 @@ textarea.input{resize:none;min-height:64px;line-height:1.5}
 .rep-preview-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--line);background:#e9e2e4}
 .rep-preview-scroll #rep-preview{width:794px}
 .rep-preview-scroll .report{transform-origin:top left}
+
+
+/* ---- Pemilih tempoh laporan (Keseluruhan / Bulanan) ---- */
+.rep-period{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-sm);border:1px solid var(--line);padding:14px 15px;margin-bottom:12px}
+.rep-period .rpd-t{font-size:11px;font-weight:900;letter-spacing:.8px;color:var(--ink-2);margin-bottom:9px;text-transform:uppercase}
+.rp-seg{display:flex;background:#ece0e3;border-radius:13px;padding:4px;gap:4px}
+.rp-seg button{flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:900;color:var(--ink-2);transition:all .2s}
+.rp-seg button.on{background:var(--card);color:var(--g);box-shadow:var(--sh-sm)}
+.rp-month{display:flex;align-items:center;gap:8px;margin-top:11px}
+.rp-month .picker{margin-bottom:0;flex:1;text-align:center;padding-left:13px}
+.rp-nav{width:44px;height:44px;flex:none;border-radius:12px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;font-size:20px;font-weight:900;color:var(--g)}
+.rp-nav:disabled{opacity:.35;cursor:not-allowed}
+.rp-period-note{font-size:11px;color:var(--ink-2);margin-top:9px;line-height:1.45}
 
 /* ---- Modal (tambah/edit pelajar) ---- */
 .modal{position:absolute;inset:0;z-index:70;background:rgba(30,8,15,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end}
@@ -1579,22 +1592,40 @@ function analisisIndividuHTML(){
 
 /* ---------------- RENDER: LAPORAN ---------------- */
 function renderLaporan(){
+ var oldSel=document.getElementById('rep-student');var keepStud=oldSel?oldSel.value:'';
  var studOpts=rankedStudents().map(function(s){return '<option value="'+s.id+'">'+esc(s.name)+'</option>';}).join('');
+ var M=repMonthly();
+ var months=repMonthList();
+ if(M&&months.indexOf(repPeriod.ym)<0){months.push(repPeriod.ym);months.sort().reverse();}
+ var mi=M?months.indexOf(repPeriod.ym):0;
+ var periodCard='<div class="rep-period"><div class="rpd-t">Tempoh Laporan</div>'
+   +'<div class="rp-seg">'
+     +'<button class="'+(M?'':'on')+'" data-action="rep-mode" data-mode="all">Keseluruhan</button>'
+     +'<button class="'+(M?'on':'')+'" data-action="rep-mode" data-mode="month">Bulanan</button>'
+   +'</div>'
+   +(M?('<div class="rp-month">'
+     +'<button class="rp-nav" data-action="rep-prev" aria-label="Bulan sebelumnya"'+(mi>=months.length-1?' disabled':'')+'>&#8249;</button>'
+     +'<select class="picker" id="rep-month" aria-label="Pilih bulan">'+months.map(function(ym){return '<option value="'+ym+'"'+(ym===repPeriod.ym?' selected':'')+'>'+ymLabel(ym)+'</option>';}).join('')+'</select>'
+     +'<button class="rp-nav" data-action="rep-next" aria-label="Bulan seterusnya"'+(mi<=0?' disabled':'')+'>&#8250;</button>'
+   +'</div><div class="rp-period-note">Semua laporan di bawah hanya mengira rekod hafazan &amp; kehadiran bagi <b>'+ymLabel(repPeriod.ym)+'</b>.</div>')
+   :'<div class="rp-period-note">Laporan mengira semua rekod hafazan sejak awal. Pilih <b>Bulanan</b> untuk jana laporan bagi satu bulan sahaja.</div>')
+ +'</div>';
  document.getElementById('s-laporan').innerHTML=''
   +'<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama"><span data-ic="back"></span></button><div class="hero-title">LAPORAN PDF</div><div style="width:38px"></div></div>'
-    +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">Jana & simpan laporan sebagai PDF</div></div></div>'
+    +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">Jana & simpan laporan keseluruhan atau bulanan</div></div></div>'
   +'<div class="pad" style="padding-top:16px">'
+    +periodCard
     +'<div class="rep-opt">'
       +'<div class="ro-ic" style="background:linear-gradient(135deg,#8a2540,#4a1020)">'+svg(ICONS.users,24)+'</div>'
-      +'<div class="ro-body"><div class="ro-t">Laporan Keseluruhan Kelas</div>'
-        +'<div class="ro-d">Ringkasan kelas, jadual ranking semua pelajar, pecahan fasa & graf kemajuan mingguan.</div>'
+      +'<div class="ro-body"><div class="ro-t">Laporan '+(M?'Bulanan ':'Keseluruhan ')+'Kelas</div>'
+        +'<div class="ro-d">Ringkasan kelas, jadual ranking semua pelajar, pecahan fasa & graf kemajuan '+(M?'mingguan dalam bulan dipilih':'mingguan')+'.</div>'
         +'<div class="ro-act"><button class="btn btn-primary sm" data-action="report-class">'+svg(ICONS.report,15)+' Jana Laporan Kelas</button></div>'
       +'</div>'
     +'</div>'
     +'<div class="rep-opt">'
       +'<div class="ro-ic" style="background:linear-gradient(135deg,#e8c56a,#c9a24b)">'+svg(ICONS.user,24)+'</div>'
       +'<div class="ro-body"><div class="ro-t">Laporan Individu Pelajar</div>'
-        +'<div class="ro-d">Butiran seorang pelajar: statistik, pecahan fasa, senarai rekod penuh & ruang tandatangan.</div>'
+        +'<div class="ro-d">Butiran seorang pelajar: statistik, pecahan fasa, senarai rekod'+(M?' bulan dipilih':' penuh')+' & ruang tandatangan.</div>'
         +'<div class="ro-act" style="flex-direction:column;align-items:stretch">'
           +'<select class="picker" id="rep-student" style="margin-bottom:9px">'+studOpts+'</select>'
           +'<button class="btn btn-gold sm" data-action="report-one">'+svg(ICONS.report,15)+' Jana Laporan Pelajar</button>'
@@ -1604,7 +1635,7 @@ function renderLaporan(){
     +'<div class="rep-opt">'
       +'<div class="ro-ic" style="background:linear-gradient(135deg,#7c74e6,#5b54d6)">'+svg(ICONS.report,24)+'</div>'
       +'<div class="ro-body"><div class="ro-t">Laporan Semua Individu (Sekali Gus)</div>'
-        +'<div class="ro-d">Satu dokumen mengandungi laporan penuh setiap pelajar, satu muka surat setiap seorang.</div>'
+        +'<div class="ro-d">Satu dokumen mengandungi laporan '+(M?'bulanan ':'penuh ')+'setiap pelajar, satu muka surat setiap seorang.</div>'
         +'<div class="ro-act"><button class="btn btn-line sm" data-action="report-all-ind">'+svg(ICONS.report,15)+' Jana Laporan Semua</button></div>'
       +'</div>'
     +'</div>'
@@ -1616,6 +1647,7 @@ function renderLaporan(){
     +'</div>'
   +'</div>';
  paintIcons(document.getElementById('s-laporan'));
+ var st=document.getElementById('rep-student');if(st&&keepStud&&studentById(keepStud))st.value=keepStud;
  var pw=document.getElementById('rep-preview-wrap');if(pw)pw.classList.remove('on');
  activeReport=null;
 }
@@ -2230,6 +2262,57 @@ function onTargetChange(){var v=parseInt(this.value,10);if(!v||v<1)v=5;if(v>50)v
 /* =================================================================
    LAPORAN PDF  (guna cetakan pelayar → "Simpan sebagai PDF")
    ================================================================= */
+/* ---------------- TEMPOH LAPORAN (Keseluruhan / Bulanan) ---------------- */
+var MONTHS_MS=['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+var repPeriod={mode:'all',ym:null};
+function ymOf(ts){var d=new Date(ts);return d.getFullYear()+'-'+two(d.getMonth()+1);}
+function ymLabel(ym){var p=String(ym).split('-');return MONTHS_MS[(+p[1])-1]+' '+p[0];}
+function ymShift(ym,delta){var p=ym.split('-');return ymOf(new Date(+p[0],(+p[1])-1+delta,1).getTime());}
+function repMonthly(){return repPeriod.mode==='month'&&!!repPeriod.ym;}
+function repMonthList(){
+ var now=ymOf(Date.now()),earliest=ymShift(now,-5);
+ state.students.forEach(function(s){(s.records||[]).concat(s.attendance||[]).forEach(function(r){if(r&&r.ts){var y=ymOf(r.ts);if(y<earliest)earliest=y;}});});
+ var out=[],y=now,g=0;
+ while(y>=earliest&&g<120){out.push(y);y=ymShift(y,-1);g++;}
+ return out;
+}
+function periodRecs(recs){var R=recs||[];return repMonthly()?R.filter(function(r){return ymOf(r.ts)===repPeriod.ym;}):R;}
+function periodAtt(list){var ym=repMonthly()?repPeriod.ym:ymOf(Date.now());return (list||[]).filter(function(a){return ymOf(a.ts)===ym;});}
+function periodRecsOf(recs,ym){return (recs||[]).filter(function(r){return ymOf(r.ts)===ym;});}
+function daysActive(recs){var d={};recs.forEach(function(r){d[dayKey(r.ts)]=1;});return Object.keys(d).length;}
+function rankedPeriod(){
+ return state.students.slice().sort(function(a,b){
+  var d=mataOf(periodRecs(b.records))-mataOf(periodRecs(a.records));
+  if(d)return d;
+  return (a.no||0)-(b.no||0);
+ });
+}
+function weekSeries(recs,ym){
+ var p=ym.split('-'),y=+p[0],m=(+p[1])-1,dim=new Date(y,m+1,0).getDate();
+ var ranges=[[1,7],[8,14],[15,21],[22,28]];if(dim>28)ranges.push([29,dim]);
+ return ranges.map(function(r){
+  var v=0;
+  recs.forEach(function(x){var d=new Date(x.ts);if(d.getFullYear()===y&&d.getMonth()===m&&d.getDate()>=r[0]&&d.getDate()<=r[1])v+=recPoints(x);});
+  return {label:(r[0]===r[1]?String(r[0]):(r[0]+'-'+r[1])),value:v};
+ });
+}
+function deltaText(cur,prev,prevYm){
+ var d=cur-prev;
+ return (d>0?'+':'')+d+' mata ('+ymLabel(prevYm)+': '+prev+')';
+}
+function setRepMode(mode){
+ if(mode==='month'){repPeriod.mode='month';if(!repPeriod.ym)repPeriod.ym=ymOf(Date.now());}
+ else repPeriod.mode='all';
+ renderLaporan();
+}
+function setRepMonth(ym){if(!ym)return;repPeriod.mode='month';repPeriod.ym=ym;renderLaporan();}
+function stepRepMonth(delta){
+ var ym=repPeriod.ym||ymOf(Date.now()),n=ymShift(ym,delta);
+ if(n>ymOf(Date.now()))return;
+ setRepMonth(n);
+}
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='rep-month')setRepMonth(e.target.value);});
+
 function repLogo(){return '<svg class="rp-logo" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="12" fill="rgba(255,255,255,.16)"/><path d="M24 15c-3.4-2.6-8-2.6-11-1.6v20c3-1 7.6-1 11 1.6 3.4-2.6 8-2.6 11-1.6v-20c-3-1-7.6-1-11 1.6z" fill="none" stroke="#e6c46a" stroke-width="2.4" stroke-linejoin="round"/><path d="M24 16.6v18.4" stroke="#e6c46a" stroke-width="2.4"/></svg>';}
 function repHeader(sub){
  var K=state.klass;
@@ -2264,65 +2347,87 @@ function repAttendanceBreak(list){
 function repAttendanceSection(list,titleSuffix){
  var pct=attPercent(list);
  var counts={hadir:0,tidak:0};(list||[]).forEach(function(a){if(counts[a.status]!=null)counts[a.status]++;});
- return '<div class="rp-sec-t">'+svg(ICONS.users,15)+' Kehadiran '+(titleSuffix||'')+' (Bulan Ini)</div>'
+ return '<div class="rp-sec-t">'+svg(ICONS.users,15)+' Kehadiran '+(titleSuffix||'')+' ('+(repMonthly()?ymLabel(repPeriod.ym):'Bulan Ini')+')</div>'
   +repKpi([[(pct==null?'—':pct+'%'),'Peratus Kehadiran'],[(list?list.length:0)+'','Hari Direkod'],[(counts.hadir||0)+'','Hadir'],[(counts.tidak||0)+'','Tidak Hadir']])
-  +((list&&list.length)?repAttendanceBreak(list):'<div style="text-align:center;color:#a8969b;font-size:11.5px;padding:6px 0 14px">Tiada rekod kehadiran bulan ini.</div>');
+  +((list&&list.length)?repAttendanceBreak(list):'<div style="text-align:center;color:#a8969b;font-size:11.5px;padding:6px 0 14px">Tiada rekod kehadiran bagi tempoh ini.</div>');
 }
 
 function buildClassReport(){
- var K=state.klass, cs=classStats();
- var ranked=rankedStudents();
- var allRecs=classAllRecords();
+ var K=state.klass, M=repMonthly(), ym=repPeriod.ym;
+ var ranked=rankedPeriod();
+ var allRecs=periodRecs(classAllRecords());
+ var totalMata=mataOf(allRecs), totalPages=pagesOf(allRecs), nStud=state.students.length||1;
+ var activeN=state.students.filter(function(s){return periodRecs(s.records).length;}).length;
  var rows=ranked.map(function(s,i){
-  var mata=studentTotal(s);
-  var streak=streakOf(s.records);
-  var last=s.records.length?fmtDate(sortRecs(s.records)[0].ts):'-';
-  return '<tr class="'+(i<3?'top':'')+'"><td class="c">'+(i+1)+'</td><td>'+esc(s.name)+'</td>'
-   +'<td class="c">'+s.records.length+'</td><td class="c">'+pagesOf(s.records)+'</td>'
-   +'<td class="c">'+streak+'</td><td class="c">'+last+'</td><td class="r">'+mata+'</td></tr>';
+  var pr=periodRecs(s.records), mata=mataOf(pr), c4, c5;
+  if(M){c4=daysActive(pr);var ap=attPercent(periodAtt(s.attendance));c5=(ap==null?'—':ap+'%');}
+  else{c4=streakOf(s.records);c5=s.records.length?fmtDate(sortRecs(s.records)[0].ts):'-';}
+  return '<tr class="'+(i<3&&mata>0?'top':'')+'"><td class="c">'+(i+1)+'</td><td>'+esc(s.name)+'</td>'
+   +'<td class="c">'+pr.length+'</td><td class="c">'+pagesOf(pr)+'</td>'
+   +'<td class="c">'+c4+'</td><td class="c">'+c5+'</td><td class="r">'+mata+'</td></tr>';
  }).join('');
+ var info=[['Kelas',K.name||'-'],['Guru',K.guru||'-'],['Tahun / Sesi',K.tahun||'-'],['Bilangan Pelajar',String(state.students.length)]];
+ if(M){
+  var prevYm=ymShift(ym,-1), prevMata=mataOf(periodRecsOf(classAllRecords(),prevYm));
+  info.unshift(['Bulan Laporan',ymLabel(ym)]);
+  info.push(['Pelajar Aktif',activeN+' / '+state.students.length]);
+  info.push(['Berbanding Bulan Lepas',deltaText(totalMata,prevMata,prevYm)]);
+ }
+ var thead=M
+  ?'<tr><th class="c">#</th><th>Nama Pelajar</th><th class="c">Rekod</th><th class="c">M/S</th><th class="c">Hari Aktif</th><th class="c">Kehadiran</th><th class="r">Mata</th></tr>'
+  :'<tr><th class="c">#</th><th>Nama Pelajar</th><th class="c">Rekod</th><th class="c">M/S</th><th class="c">Streak</th><th class="c">Aktiviti Akhir</th><th class="r">Mata</th></tr>';
+ var allAtt=[];state.students.forEach(function(st){periodAtt(st.attendance).forEach(function(a){allAtt.push(a);});});
 
- return '<div class="report">'+repHeader('Laporan Prestasi Kelas Hafazan')
+ return '<div class="report">'+repHeader(M?('Laporan Bulanan — '+ymLabel(ym)):'Laporan Prestasi Kelas Hafazan')
   +'<div class="rp-body">'
-   +'<div class="rp-title">Laporan Keseluruhan Kelas</div>'
-   +'<div class="rp-titsub">Ringkasan prestasi hafazan al-Quran bagi semua pelajar</div>'
-   +repInfo([['Kelas',K.name||'-'],['Guru',K.guru||'-'],['Tahun / Sesi',K.tahun||'-'],['Bilangan Pelajar',String(cs.n)]])
-   +repKpi([[cs.totalMata,'Jumlah Mata'],[cs.avgMata,'Purata/Pelajar'],[cs.totalPages+'','Muka Surat'],[cs.totalRecs+'','Jumlah Rekod']])
-   +'<div class="rp-sec-t">'+svg(ICONS.medal,15)+' Jadual Ranking Pelajar</div>'
-   +'<table class="rp-tbl"><thead><tr><th class="c">#</th><th>Nama Pelajar</th><th class="c">Rekod</th><th class="c">M/S</th><th class="c">Streak</th><th class="c">Aktiviti Akhir</th><th class="r">Mata</th></tr></thead><tbody>'+rows+'</tbody></table>'
-   +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa (Keseluruhan Kelas)</div>'
+   +'<div class="rp-title">'+(M?('Laporan Bulanan Kelas — '+ymLabel(ym)):'Laporan Keseluruhan Kelas')+'</div>'
+   +'<div class="rp-titsub">'+(M?('Ringkasan prestasi hafazan al-Quran bagi bulan '+ymLabel(ym)):'Ringkasan prestasi hafazan al-Quran bagi semua pelajar')+'</div>'
+   +repInfo(info)
+   +repKpi([[totalMata,'Jumlah Mata'],[Math.round(totalMata/nStud),'Purata/Pelajar'],[totalPages+'','Muka Surat'],[allRecs.length+'','Jumlah Rekod']])
+   +'<div class="rp-sec-t">'+svg(ICONS.medal,15)+' Jadual Ranking Pelajar'+(M?(' ('+ymLabel(ym)+')'):'')+'</div>'
+   +'<table class="rp-tbl"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table>'
+   +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa ('+(M?ymLabel(ym):'Keseluruhan Kelas')+')</div>'
    +repPhaseBreak(allRecs)
-   +repChart(seriesFor(allRecs,'week'),'Kemajuan Mata Kelas (7 Hari Terakhir)')
-   +repAttendanceSection((function(){var all=[];state.students.forEach(function(st){(st.attendance||[]).forEach(function(a){if(isThisMonth(a.ts))all.push(a);});});return all;})(),'Kelas')
+   +(M?repChart(weekSeries(allRecs,ym),'Kemajuan Mata Kelas — '+ymLabel(ym)+' (Mingguan)'):repChart(seriesFor(allRecs,'week'),'Kemajuan Mata Kelas (7 Hari Terakhir)'))
+   +repAttendanceSection(allAtt,'Kelas')
    +'<div class="rp-sign"><div><div class="ln"></div>Tandatangan Guru</div><div><div class="ln"></div>Tandatangan Penyelia</div></div>'
    +'<div class="rp-note">Laporan ini dijana secara automatik oleh sistem MyUA — Sistem Rekod Hafazan al-Quran.<br>Mata dikira berdasarkan tetapan fasa semasa. © MyUA '+new Date().getFullYear()+'</div>'
   +'</div></div>';
 }
 
 function buildStudentReport(s,pageBreak){
- var K=state.klass;
- var recs=sortRecs(s.records);
- var rank=rankedStudents().map(function(x){return x.id;}).indexOf(s.id)+1;
+ var K=state.klass, M=repMonthly(), ym=repPeriod.ym;
+ var pr=periodRecs(s.records);
+ var recs=sortRecs(pr);
+ var rank=rankedPeriod().map(function(x){return x.id;}).indexOf(s.id)+1;
  var rowHTML=recs.length?recs.map(function(r){
   return '<tr><td class="c">'+fmtDate(r.ts)+'</td><td><span class="rp-badge" style="background:'+PC[r.phase]+'">'+PHASES[r.phase].label+'</span></td>'
    +'<td class="c">'+(r.start===r.end?('M/S '+r.start):('M/S '+r.start+'–'+r.end))+'</td>'
    +'<td class="c">'+juzLabel(r.start,r.end).replace('Juz ','J')+'</td>'
    +'<td>'+esc(surahLabel(r.start,r.end))+'</td>'
    +'<td>'+esc(r.note||'-')+'</td><td class="r">'+recPoints(r)+'</td></tr>';
- }).join(''):'<tr><td colspan="7" style="text-align:center;color:#a8969b;padding:14px">Tiada rekod hafazan lagi.</td></tr>';
+ }).join(''):'<tr><td colspan="7" style="text-align:center;color:#a8969b;padding:14px">'+(M?'Tiada rekod hafazan pada bulan ini.':'Tiada rekod hafazan lagi.')+'</td></tr>';
+ var mata=mataOf(pr);
+ var info=[['Kelas',K.name||'-'],['Guru',K.guru||'-'],['No. Pelajar',String(s.no||'-')],['Kedudukan Kelas','#'+rank+' daripada '+state.students.length]];
+ if(M){
+  var prevYm=ymShift(ym,-1), prevMata=mataOf(periodRecsOf(s.records,prevYm));
+  info.unshift(['Bulan Laporan',ymLabel(ym)]);
+  info.push(['Berbanding Bulan Lepas',deltaText(mata,prevMata,prevYm)]);
+ }
+ var kpi4=M?[daysActive(pr)+'','Hari Aktif']:[streakOf(s.records)+'','Hari Streak'];
 
- return '<div class="report'+(pageBreak?' page-break':'')+'">'+repHeader('Laporan Prestasi Individu')
+ return '<div class="report'+(pageBreak?' page-break':'')+'">'+repHeader(M?('Laporan Bulanan — '+ymLabel(ym)):'Laporan Prestasi Individu')
   +'<div class="rp-body">'
    +'<div class="rp-title">'+esc(s.name)+'</div>'
-   +'<div class="rp-titsub">Laporan kemajuan hafazan al-Quran individu</div>'
-   +repInfo([['Kelas',K.name||'-'],['Guru',K.guru||'-'],['No. Pelajar',String(s.no||'-')],['Kedudukan Kelas','#'+rank+' daripada '+state.students.length]])
-   +repKpi([[mataOf(s.records),'Jumlah Mata'],[pagesOf(s.records)+'','Muka Surat'],[s.records.length+'','Jumlah Rekod'],[streakOf(s.records)+'','Hari Streak']])
-   +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa</div>'
-   +repPhaseBreak(s.records)
-   +repChart(seriesFor(s.records,'week'),'Kemajuan Mata (7 Hari Terakhir)')
+   +'<div class="rp-titsub">'+(M?('Laporan kemajuan hafazan al-Quran individu bagi bulan '+ymLabel(ym)):'Laporan kemajuan hafazan al-Quran individu')+'</div>'
+   +repInfo(info)
+   +repKpi([[mata,'Jumlah Mata'],[pagesOf(pr)+'','Muka Surat'],[pr.length+'','Jumlah Rekod'],kpi4])
+   +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa'+(M?(' ('+ymLabel(ym)+')'):'')+'</div>'
+   +repPhaseBreak(pr)
+   +(M?repChart(weekSeries(pr,ym),'Kemajuan Mata — '+ymLabel(ym)+' (Mingguan)'):repChart(seriesFor(pr,'week'),'Kemajuan Mata (7 Hari Terakhir)'))
    +'<div class="rp-sec-t">'+svg(ICONS.list,15)+' Senarai Rekod Hafazan ('+recs.length+')</div>'
    +'<table class="rp-tbl"><thead><tr><th class="c">Tarikh</th><th>Fasa</th><th class="c">Muka Surat</th><th class="c">Juz</th><th>Surah</th><th>Catatan</th><th class="r">Mata</th></tr></thead><tbody>'+rowHTML+'</tbody></table>'
-   +repAttendanceSection((s.attendance||[]).filter(function(a){return isThisMonth(a.ts);}),esc(s.name.split(' ')[0]))
+   +repAttendanceSection(periodAtt(s.attendance),esc(s.name.split(' ')[0]))
    +'<div class="rp-sign"><div><div class="ln"></div>Tandatangan Guru</div><div><div class="ln"></div>Tandatangan Ibu Bapa / Penjaga</div></div>'
    +'<div class="rp-note">Laporan ini dijana secara automatik oleh sistem MyUA.<br>© MyUA '+new Date().getFullYear()+'</div>'
   +'</div></div>';
@@ -2360,12 +2465,13 @@ function pdfDownload(){
  printHTML(activeReport.html,activeReport.title);
 }
 
-function reportClass(){showReportPreview(buildClassReport(),'Laporan Kelas '+(state.klass.name||''));}
-function reportStudent(id){var s=studentById(id);if(!s){toast('Pelajar tidak dijumpai.',false);return;}showReportPreview(buildStudentReport(s,false),'Laporan '+s.name);}
+function repSuffix(){return repMonthly()?(' — '+ymLabel(repPeriod.ym)):'';}
+function reportClass(){showReportPreview(buildClassReport(),(repMonthly()?'Laporan Bulanan Kelas ':'Laporan Kelas ')+(state.klass.name||'')+repSuffix());}
+function reportStudent(id){var s=studentById(id);if(!s){toast('Pelajar tidak dijumpai.',false);return;}showReportPreview(buildStudentReport(s,false),'Laporan '+s.name+repSuffix());}
 function reportAllIndividual(){
  if(!state.students.length){toast('Tiada pelajar.',false);return;}
- var html=rankedStudents().map(function(s,i){return buildStudentReport(s,i>0);}).join('');
- showReportPreview(html,'Laporan Semua Pelajar');
+ var html=rankedPeriod().map(function(s,i){return buildStudentReport(s,i>0);}).join('');
+ showReportPreview(html,'Laporan Semua Pelajar'+repSuffix());
 }
 
 /* ---------------- TOAST & KESAN ---------------- */
@@ -2459,6 +2565,9 @@ document.addEventListener('click',function(e){
   case 'edit-student':openStudentModal(el.getAttribute('data-id'));break;
   case 'del-student':delStudent(el.getAttribute('data-id'));break;
   case 'modal-close':closeStudentModal();break;
+  case 'rep-mode':setRepMode(el.getAttribute('data-mode'));break;
+  case 'rep-prev':stepRepMonth(-1);break;
+  case 'rep-next':stepRepMonth(1);break;
   case 'report-class':reportClass();break;
   case 'report-one':reportStudent(document.getElementById('rep-student').value);break;
   case 'report-all-ind':reportAllIndividual();break;
