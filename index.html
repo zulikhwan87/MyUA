@@ -477,6 +477,30 @@ textarea.input{resize:none;min-height:64px;line-height:1.5}
 .mj-set .picker{margin-bottom:0}
 @media print{#s-murajaah{display:none!important}}
 
+
+/* ---- Mutu bacaan ---- */
+.grade-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grade-btn{background:var(--bg);border:1.5px solid var(--line);border-radius:13px;padding:11px 4px 9px;font-size:13px;font-weight:900;color:var(--ink-2);transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.grade-btn small{font-size:9.5px;font-weight:700;color:var(--ink-3);text-align:center;line-height:1.25}
+.grade-btn.sel{color:#fff;border-color:var(--gc);background:var(--gc);box-shadow:0 6px 16px rgba(0,0,0,.14)}
+.grade-btn.sel small{color:rgba(255,255,255,.88)}
+.grade-hint{font-size:11px;color:var(--ink-3);margin-top:7px;line-height:1.45}
+.grade-pill{display:inline-block;font-size:9.5px;font-weight:900;padding:2px 8px;border-radius:99px;color:#fff;margin-left:6px;vertical-align:1px}
+.mj-row{flex-wrap:wrap}
+.mj-grades{flex-basis:100%;display:flex;align-items:center;gap:6px;margin-top:2px}
+.mj-grades .gl{font-size:10px;font-weight:800;color:var(--ink-3);margin-right:2px;white-space:nowrap}
+.mj-gb{flex:1;font-size:11px;font-weight:900;padding:8px 4px;border-radius:9px;border:1.5px solid var(--gc);color:var(--gc);background:#fff}
+.mj-gb:active{background:var(--gc);color:#fff}
+/* ---- Laporan: murajaah pintar ---- */
+.rp-mj{display:flex;gap:16px;align-items:flex-start;margin-bottom:14px;page-break-inside:avoid}
+.rp-mj .hm{width:280px;flex:none}
+.rp-mj .hm svg{width:100%;height:auto;display:block}
+.rp-mj .tx{flex:1;font-size:11.5px;line-height:1.65;color:#6e565d}
+.rp-mj .tx b{color:#2b1a20}
+.rp-mj .tx .ln2{padding:5px 0;border-bottom:1px dashed #eadde0}
+.rp-lv{display:inline-block;padding:2px 11px;border-radius:99px;color:#fff;font-weight:800;font-size:11px}
+.rp-small{font-size:10px;color:#a8969b;line-height:1.5;margin:6px 0 12px}
+
 /* ---- Modal (tambah/edit pelajar) ---- */
 .modal{position:absolute;inset:0;z-index:70;background:rgba(30,8,15,.55);backdrop-filter:blur(3px);display:none;align-items:flex-end}
 .modal.on{display:flex;animation:fade .25s}
@@ -706,6 +730,18 @@ table.rp-tbl tr.top td{font-weight:800}
             <input class="input" type="date" id="khd-tarikh">
             <label class="field-lbl" style="margin-top:13px"><span data-ic="check"></span>Status Kehadiran</label>
             <div class="att-row" id="khd-status"></div>
+          </div>
+
+          <div class="field" id="f-date-wrap">
+            <label class="field-lbl" for="f-date"><span data-ic="calendar"></span>Tarikh Bacaan</label>
+            <input class="input" type="date" id="f-date">
+            <p class="grade-hint">Tukar jika bacaan pelajar berlaku pada hari lain (contohnya terlupa merekod). Tarikh akan datang tidak dibenarkan.</p>
+          </div>
+
+          <div class="field" id="f-grade-wrap">
+            <label class="field-lbl"><span data-ic="star"></span>Mutu Bacaan (pilihan)</label>
+            <div class="grade-row" id="f-grade"></div>
+            <p class="grade-hint">Ketik pilihan sekali lagi untuk batalkan. Tanpa penilaian, bacaan dikira sederhana.</p>
           </div>
 
           <div class="field">
@@ -981,6 +1017,47 @@ const PHASES={
 const PHASE_ORDER=['talaqqi','tasmik','murajaah','tahriri'];
 const PC={talaqqi:'#0d9488',hafazan:'#0e7a43',murajaah:'#ef8f1c',tasmik:'#5b54d6',tahriri:'#dc2f6e'};
 
+/* ---- Mutu bacaan (talaqqi, tasmik, murajaah) ---- */
+var GRADES={lancar:{label:'Lancar',color:'#0e7a43',desc:'Tiada / sangat sedikit kesalahan'},sederhana:{label:'Sederhana',color:'#ef8f1c',desc:'Beberapa kesalahan / teragak-agak'},lemah:{label:'Lemah',color:'#e5484d',desc:'Banyak kesalahan / perlu bantuan guru'}};
+var GRADE_ORDER=['lancar','sederhana','lemah'];
+var GRADED={talaqqi:1,tasmik:1,murajaah:1};
+var curGrade='';
+function gradePill(r){if(!r||!r.grade||!GRADES[r.grade]||!GRADED[r.phase])return '';return '<span class="grade-pill" style="background:'+GRADES[r.grade].color+'">'+GRADES[r.grade].label+'</span>';}
+function renderGradeUI(){
+ var el=document.getElementById('f-grade');if(!el)return;
+ el.innerHTML=GRADE_ORDER.map(function(g){var G=GRADES[g];
+  return '<button type="button" class="grade-btn'+(curGrade===g?' sel':'')+'" style="--gc:'+G.color+'" data-action="set-grade" data-grade="'+g+'">'+G.label+'<small>'+G.desc+'</small></button>';
+ }).join('');
+}
+function setGrade(g){curGrade=(curGrade===g)?'':g;renderGradeUI();}
+var fDateTouched=false;
+function todayKey(){return dayKey(Date.now());}
+function refreshDateField(){
+ var wrap=document.getElementById('f-date-wrap'),d=document.getElementById('f-date');
+ if(!wrap||!d)return;
+ wrap.classList.toggle('khd-hide',currentPhase===ATT_KEY);
+ d.max=todayKey();
+ if(!d.value||(!fDateTouched&&!editingId))d.value=todayKey(); // elak tarikh lapuk jika apl dibiar terbuka melepasi tengah malam
+}
+// tarikh baharu dengan masa asal (supaya susunan rekod pada hari yang sama kekal)
+function tsForDate(dateStr,baseTs){
+ if(!dateStr||dayKey(baseTs)===dateStr)return baseTs;
+ var p=dateStr.split('-'),b=new Date(baseTs);
+ return new Date(+p[0],+p[1]-1,+p[2],b.getHours(),b.getMinutes(),b.getSeconds()).getTime();
+}
+function dateAdjPill(r){
+ if(!r||!r.at||dayKey(r.at)===dayKey(r.ts))return '';
+ return '<span class="grade-pill" style="background:#7c74e6" title="Dimasukkan pada '+fmtDate(r.at)+'">Tarikh dipinda</span>';
+}
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='f-date')fDateTouched=true;});
+function refreshGradeVis(){
+ refreshDateField();
+ var w=document.getElementById('f-grade-wrap');if(!w)return;
+ var show=!!GRADED[currentPhase];
+ w.classList.toggle('khd-hide',!show);
+ if(show)renderGradeUI();
+}
+
 /* ---------------- KEHADIRAN (fungsi berasingan — tidak dikira dalam mata/streak) ---------------- */
 const ATT_KEY='kehadiran';
 const ATT_COLOR='#2563eb';
@@ -1134,7 +1211,8 @@ function parsePages(str){
  return {start:a,end:b};
 }
 function addRecord(stud,d){
- var r={id:uid(),phase:d.phase,start:d.start,end:d.end,note:(d.note||'').trim(),ts:Date.now()};
+ var r={id:uid(),phase:d.phase,start:d.start,end:d.end,note:(d.note||'').trim(),ts:(d.ts||Date.now()),at:Date.now()};
+ if(d.grade&&GRADES[d.grade]&&GRADED[d.phase])r.grade=d.grade;
  stud.records.push(r);saveState();return r;
 }
 function deleteRecord(stud,id){
@@ -1216,7 +1294,7 @@ function recItemHTML(r,opts){
  return '<div class="rec" style="--ac:'+ac+'">'
   +'<div class="rec-n" style="background:'+ac+'">'+svg(ICONS[P.icon],16)+'</div>'
   +'<div class="rec-mid">'
-    +'<div class="rec-top"><span class="rec-phase">'+P.label+'</span></div>'
+    +'<div class="rec-top"><span class="rec-phase">'+P.label+'</span>'+gradePill(r)+dateAdjPill(r)+'</div>'
     +'<div class="rec-ms"><b>'+pageTxt+'</b> · '+juzLabel(r.start,r.end)+' · '+esc(surahLabel(r.start,r.end))+'</div>'
     +'<div class="rec-dt">'+svg(ICONS.calendar,11)+' '+fmtDate(r.ts)+' &nbsp; '+svg(ICONS.clock,11)+' '+fmtTime(r.ts)+(r.note?(' &nbsp;· '+esc(r.note)):'')+'</div>'
   +'</div>'
@@ -1425,6 +1503,7 @@ function setAttStatus(k){
  document.querySelectorAll('#khd-status .att-status').forEach(function(el){el.classList.toggle('sel',el.getAttribute('data-att-status')===k);});
 }
 function refreshFasaSave(){
+ refreshGradeVis();
  var btn=document.getElementById('f-save');
  var pageWrap=document.getElementById('f-page-wrap'),khdForm=document.getElementById('khd-form');
  if(currentPhase===ATT_KEY){
@@ -1824,6 +1903,8 @@ function startRecordFor(phase){
 }
 function resetForm(){
  document.getElementById('f-page').value='';document.getElementById('f-note').value='';updateAuto();
+ curGrade='';renderGradeUI();
+ fDateTouched=false;var fd=document.getElementById('f-date');if(fd){fd.max=todayKey();fd.value=todayKey();}
  var kd=document.getElementById('khd-tarikh');if(kd)kd.value=dayKey(Date.now());
  setAttStatus('hadir');
 }
@@ -1839,15 +1920,18 @@ function saveRecord(){
  if(p.invalid){toast('Muka surat tidak sah (1 – 604).',false);shake('f-page');return;}
  if(!currentPhase){toast('Sila pilih fasa.',false);return;}
  var note=document.getElementById('f-note').value;
+ var dEl=document.getElementById('f-date'),dVal=(dEl&&dEl.value)?dEl.value:todayKey();
+ if(dVal>todayKey()){toast('Tarikh bacaan tidak boleh pada masa hadapan.',false);shake('f-date');return;}
+ if(dVal<'2000-01-01'){toast('Tarikh bacaan tidak sah.',false);shake('f-date');return;}
  if(editingId){
   var r=s.records.filter(function(x){return x.id===editingId;})[0];
-  if(r){r.start=p.start;r.end=p.end;r.phase=currentPhase;r.note=(note||'').trim();}
+  if(r){r.start=p.start;r.end=p.end;r.phase=currentPhase;r.note=(note||'').trim();if(curGrade&&GRADED[currentPhase])r.grade=curGrade;else delete r.grade;r.ts=tsForDate(dVal,r.ts);}
   saveState();editingId=null;resetForm();setSaveLabel();renderAll();
   toast('Rekod dikemaskini.',true);navTo('rekod');setSeg('saya');
   return;
  }
  var pts=pointsFor(currentPhase),label=PHASES[currentPhase].label;
- addRecord(s,{phase:currentPhase,start:p.start,end:p.end,note:note});
+ addRecord(s,{phase:currentPhase,start:p.start,end:p.end,note:note,grade:curGrade,ts:tsForDate(dVal,Date.now())});
  resetForm();renderAll();
  popPoints(pts);toastWin(pts,label);
 }
@@ -1858,6 +1942,8 @@ function loadEdit(id){
  navTo('rekod');setSeg('baru');
  document.getElementById('f-page').value=(r.start===r.end)?String(r.start):(r.start+'-'+r.end);
  document.getElementById('f-note').value=r.note||'';
+ curGrade=r.grade||'';
+ fDateTouched=true;var fd2=document.getElementById('f-date');if(fd2){fd2.max=todayKey();fd2.value=dayKey(r.ts);}
  selectPhase(r.phase);updateAuto();setSaveLabel();
  document.getElementById('content').scrollTop=0;
  toast('Menyunting rekod — ubah lalu tekan Kemaskini.',true);
@@ -2353,6 +2439,9 @@ function mjEvent(pg,p,phase,ts,grade){
  var dt=(ts-st.t)/MJ.DAY;
  if(dt<0.25){ // ulangan pada hari yang sama: kesan kecil sahaja
   st.S=Math.min(MJ.MAXS,st.S*1.05);
+ }else if(grade==='lemah'&&phase!=='talaqqi'){
+  // bacaan lemah = gagal ingat (lapse): kestabilan dikurangkan, muka surat cepat dijadualkan semula
+  st.S=Math.max(1,st.S*0.7);
  }else{
   var R=Math.exp(-dt/st.S);
   var f=0.8+1.2*(1-R);        // makin rendah R ketika diulang, makin besar pertambahan
@@ -2365,11 +2454,12 @@ function mjEvent(pg,p,phase,ts,grade){
  st.n++;
  if(confirm&&!st.conf){st.conf=true;st.cts=ts;}
 }
-function mjBuild(s){
+function mjBuild(s,until){
  var pg=new Array(TOTAL_PAGES+2);
  var recs=(s.records||[]).slice().sort(function(a,b){return a.ts-b.ts;});
  recs.forEach(function(r){
   if(!r||!r.phase||!r.ts)return;
+  if(until&&r.ts>until)return;
   var a=Math.max(1,(r.start|0)),b=Math.min(TOTAL_PAGES,(r.end|0));
   for(var p=a;p<=b;p++)mjEvent(pg,p,r.phase,r.ts,r.grade);
  });
@@ -2384,7 +2474,7 @@ function mjChunks(list){
  return out;
 }
 function mjAnalyse(s,now,cfg){
- var pg=mjBuild(s),thr=cfg.thr,mem=0,inprog=0,sumR=0,load=0,crit=0,strong=0,due=[],up=[];
+ var pg=mjBuild(s,now),thr=cfg.thr,mem=0,inprog=0,sumR=0,load=0,crit=0,strong=0,due=[],up=[];
  for(var p=1;p<=TOTAL_PAGES;p++){
   var st=pg[p];if(!st)continue;
   if(!st.conf){inprog++;continue;}
@@ -2401,12 +2491,33 @@ function mjAnalyse(s,now,cfg){
  return {pg:pg,memCount:mem,inprog:inprog,sumR:sumR,avgR:mem?sumR/mem:0,load:load,crit:crit,strong:strong,
   due:due.length,sel:sel.length,chunks:chunks,backlog:due.length-sel.length,upChunks:upChunks,upCount:up.length};
 }
+/* M/S Tasmik terakhir = muka surat akhir (end) bagi rekod Tasmik terkini (ikut tarikh) setakat 'now' */
+function mjLastTasmik(s,now){
+ var best=null;
+ (s.records||[]).forEach(function(r){
+  if(!r||!r.ts||r.ts>now)return;
+  if(r.phase!=='tasmik'&&r.phase!=='hafazan')return;
+  if(!best||r.ts>best.ts||(r.ts===best.ts&&(r.end|0)>(best.end|0)))best=r;
+ });
+ return best;
+}
 function mjProject(s,now,cfg,an){
- var M=an.memCount,remain=TOTAL_PAGES-M;
- var out={M:M,remain:remain,pct:M/TOTAL_PAGES*100,juz:Math.round(M/TOTAL_PAGES*300)/10,load:an.load};
- var recs=s.records||[],t0=Infinity;
- recs.forEach(function(r){if(r.ts&&r.ts<t0)t0=r.ts;});
- if(!recs.length||t0===Infinity){out.noData=true;return out;}
+ var out={M:an.memCount,load:an.load,pos:0,remain:TOTAL_PAGES,pct:0,juz:0,events:[]};
+ var recs=(s.records||[]).filter(function(r){return r&&r.ts&&r.ts<=now;}),t0=Infinity;
+ recs.forEach(function(r){if(r.ts<t0)t0=r.ts;});
+ if(!recs.length){out.noData=true;return out;}
+ // --- Kedudukan: M/S Tasmik terakhir ---
+ var lt=mjLastTasmik(s,now);
+ recs.forEach(function(r){if(r.phase==='tasmik'||r.phase==='hafazan')out.events.push([r.ts,Math.min(TOTAL_PAGES,Math.max(0,r.end|0))]);});
+ out.events.sort(function(x,y){return x[0]-y[0]||x[1]-y[1];});
+ if(lt){
+  var pos=Math.min(TOTAL_PAGES,Math.max(0,lt.end|0));
+  out.pos=pos;out.posStart=lt.start|0;out.posTs=lt.ts;
+  out.remain=TOTAL_PAGES-pos;
+  out.pct=pos/TOTAL_PAGES*100;
+  out.juz=Math.round(pos/TOTAL_PAGES*300)/10;
+ }else out.noTasmik=true;
+ // --- Kadar hafazan baharu (m/s sehari) ---
  var spanDays=Math.max(7,Math.min(28,(now-t0)/MJ.DAY));
  function acqBetween(from,to){var c=0;for(var p=1;p<=TOTAL_PAGES;p++){var st=an.pg[p];if(st&&st.conf&&!st.legacy&&st.cts>=from&&st.cts<=to)c++;}return c;}
  var acq=acqBetween(now-spanDays*MJ.DAY-60000,now);
@@ -2415,11 +2526,13 @@ function mjProject(s,now,cfg,an){
   var a14=acqBetween(now-14*MJ.DAY,now),b14=acqBetween(now-28*MJ.DAY,now-14*MJ.DAY);
   out.trend={recent:a14,prev:b14};
  }
- if(remain<=0){out.done=true;return out;}
+ if(out.noTasmik)return out;
+ if(out.remain<=0){out.done=true;return out;}
+ // --- Unjuran: baki (M/S 604 - M/S Tasmik terakhir) / kadar ---
  if(out.rate>0){
-  var df=function(m){return now+(remain/(out.rate*m))*MJ.DAY;};
+  var df=function(m){return now+(out.remain/(out.rate*m))*MJ.DAY;};
   out.dates={cur:df(1),pess:df(0.7),opt:df(1.3)};
-  out.daysLeft=remain/out.rate;
+  out.daysLeft=out.remain/out.rate;
  }
  if(cfg.khatam){
   var tt=new Date(cfg.khatam+'T00:00:00').getTime();
@@ -2427,7 +2540,7 @@ function mjProject(s,now,cfg,an){
    out.target=tt;
    var dl=(tt-now)/MJ.DAY;
    if(dl<=0){out.status='lewat';out.req=null;}
-   else{out.req=remain/dl;out.status=(out.rate>=out.req)?'ok':(out.rate>=out.req*0.8?'hampir':'lewat');}
+   else{out.req=out.remain/dl;out.status=(out.rate>=out.req)?'ok':(out.rate>=out.req*0.8?'hampir':'lewat');}
   }
  }
  return out;
@@ -2441,14 +2554,28 @@ function mjDateTxt(ts,now){return (ts-now>1825*MJ.DAY)?'Lebih 5 tahun':mjDate(ts
 function mjRange(a,b){return a===b?('M/S '+a):('M/S '+a+'–'+b);}
 function mjShort(ts){var d=new Date(ts);return MONTHS_MS[d.getMonth()].slice(0,3)+' '+String(d.getFullYear()).slice(2);}
 
-function mjHeat(an,cfg){
+function mjLevel(an){
+ if(!an.memCount)return {k:'none',label:'Belum Ada Data',color:'#a8969b'};
+ var ds=an.due/an.memCount,a=an.avgR;
+ if(a>=0.85&&ds<=0.10)return {k:'cemerlang',label:'Cemerlang',color:'#0e7a43'};
+ if(a>=0.70&&ds<=0.25)return {k:'baik',label:'Baik',color:'#6fa82f'};
+ if(a>=0.50)return {k:'sederhana',label:'Sederhana',color:'#ef8f1c'};
+ return {k:'perhatian',label:'Perlu Perhatian',color:'#e5484d'};
+}
+function mjStatusTxt(pr){return pr.status==='ok'?'Menepati sasaran':(pr.status==='hampir'?'Hampir menepati':(pr.status==='lewat'?'Di belakang sasaran':'—'));}
+function gradeStats(recs){
+ var out={};['talaqqi','tasmik','murajaah'].forEach(function(ph){out[ph]={lancar:0,sederhana:0,lemah:0,nr:0,n:0};});
+ (recs||[]).forEach(function(r){var o=out[r.phase];if(!o)return;o.n++;if(r.grade&&o[r.grade]!=null)o[r.grade]++;else o.nr++;});
+ return out;
+}
+function mjHeat(an,cfg,now){
  var cols=23,cell=11,gap=2,labW=22,W=labW+cols*(cell+gap),H=30*(cell+gap),g='';
  for(var j=1;j<=30;j++){
   var s0=JUZ_START[j-1],e0=(j<30?JUZ_START[j]-1:TOTAL_PAGES),y=(j-1)*(cell+gap);
   g+='<text x="0" y="'+(y+cell-2)+'" font-size="8" font-weight="700" fill="#a8969b">J'+j+'</text>';
   for(var p=s0;p<=e0;p++){
    var st=an.pg[p],c;
-   if(!st)c='#ece3e5';else if(!st.conf)c='#cfcaf5';else c=mjCol(mjRet(st,Date.now()),cfg.thr);
+   if(!st)c='#ece3e5';else if(!st.conf)c='#cfcaf5';else c=mjCol(mjRet(st,now||Date.now()),cfg.thr);
    g+='<rect x="'+(labW+(p-s0)*(cell+gap))+'" y="'+y+'" width="'+cell+'" height="'+cell+'" rx="2.5" fill="'+c+'"><title>M/S '+p+'</title></rect>';
   }
  }
@@ -2465,10 +2592,8 @@ function mjLegend(thr){
   +'<span><i style="background:#ece3e5"></i>Belum dihafaz</span></div>';
 }
 function mjChart(an,pr,now){
- var W=328,H=196,pL=34,pR=12,pT=12,pB=26,iw=W-pL-pR,ih=H-pT-pB,DAY=MJ.DAY,cts=[];
- for(var p=1;p<=TOTAL_PAGES;p++){var st=an.pg[p];if(st&&st.conf)cts.push(st.cts);}
- cts.sort(function(a,b){return a-b;});
- var xs=Math.min(cts.length?cts[0]:now,now-56*DAY),xe=now+56*DAY;
+ var W=328,H=196,pL=34,pR=12,pT=12,pB=26,iw=W-pL-pR,ih=H-pT-pB,DAY=MJ.DAY,ev=pr.events||[];
+ var xs=Math.min(ev.length?ev[0][0]:now,now-56*DAY),xe=now+56*DAY;
  if(pr.dates)xe=Math.max(xe,Math.min(pr.dates.pess,now+1095*DAY));
  if(pr.target&&pr.target>now&&pr.target<now+1095*DAY)xe=Math.max(xe,pr.target);
  function X(t){return pL+(t-xs)/(xe-xs)*iw;}
@@ -2479,19 +2604,19 @@ function mjChart(an,pr,now){
    +'<text x="'+(pL-5)+'" y="'+(Y(v)+3).toFixed(1)+'" text-anchor="end" font-size="8.5" font-weight="700" fill="#a8969b">'+v+'</text>';
  });
  var n=Math.max(8,Math.min(40,Math.round((now-xs)/(7*DAY)))),j=0,pts=[];
- for(i=0;i<=n;i++){var t=xs+i*(now-xs)/n;while(j<cts.length&&cts[j]<=t)j++;pts.push([X(t),Y(j)]);}
+ for(i=0;i<=n;i++){var t=xs+i*(now-xs)/n;while(j<ev.length&&ev[j][0]<=t)j++;pts.push([X(t),Y(j?ev[j-1][1]:0)]);}
  var path=pts.map(function(q,k){return (k?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1);}).join(' ');
  var area=path+' L'+pts[pts.length-1][0].toFixed(1)+' '+Y(0)+' L'+pts[0][0].toFixed(1)+' '+Y(0)+' Z';
  g+='<defs><linearGradient id="mjg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a2540" stop-opacity=".25"/><stop offset="1" stop-color="#8a2540" stop-opacity="0"/></linearGradient></defs>'
   +'<path d="'+area+'" fill="url(#mjg)"/><path d="'+path+'" fill="none" stroke="#8a2540" stroke-width="2.4" stroke-linejoin="round"/>';
  function proj(mult,col,w,op){
   if(!(pr.rate>0)||pr.remain<=0)return '';
-  var r=pr.rate*mult,tEnd=now+pr.remain/r*DAY,tt=Math.min(tEnd,xe),v=Math.min(TOTAL_PAGES,pr.M+r*(tt-now)/DAY);
-  return '<line x1="'+X(now).toFixed(1)+'" y1="'+Y(pr.M).toFixed(1)+'" x2="'+X(tt).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'" stroke-dasharray="5 4" opacity="'+op+'" stroke-linecap="round"/>';
+  var r=pr.rate*mult,tEnd=now+pr.remain/r*DAY,tt=Math.min(tEnd,xe),v=Math.min(TOTAL_PAGES,pr.pos+r*(tt-now)/DAY);
+  return '<line x1="'+X(now).toFixed(1)+'" y1="'+Y(pr.pos).toFixed(1)+'" x2="'+X(tt).toFixed(1)+'" y2="'+Y(v).toFixed(1)+'" stroke="'+col+'" stroke-width="'+w+'" stroke-dasharray="5 4" opacity="'+op+'" stroke-linecap="round"/>';
  }
  g+=proj(0.7,'#c9a24b',1.6,.55)+proj(1.3,'#c9a24b',1.6,.55)+proj(1,'#b8860b',2.6,1);
  g+='<line x1="'+X(now).toFixed(1)+'" y1="'+pT+'" x2="'+X(now).toFixed(1)+'" y2="'+(pT+ih)+'" stroke="#a8969b" stroke-dasharray="2 3"/>'
-  +'<circle cx="'+X(now).toFixed(1)+'" cy="'+Y(pr.M).toFixed(1)+'" r="4.5" fill="#8a2540" stroke="#fff" stroke-width="2"/>';
+  +'<circle cx="'+X(now).toFixed(1)+'" cy="'+Y(pr.pos).toFixed(1)+'" r="4.5" fill="#8a2540" stroke="#fff" stroke-width="2"/>';
  if(pr.target&&pr.target>now&&pr.target<=xe){
   g+='<line x1="'+X(pr.target).toFixed(1)+'" y1="'+pT+'" x2="'+X(pr.target).toFixed(1)+'" y2="'+(pT+ih)+'" stroke="#0e7a43" stroke-width="1.6"/>'
    +'<text x="'+(X(pr.target)-3).toFixed(1)+'" y="'+(pT+9)+'" text-anchor="end" font-size="9" font-weight="800" fill="#0e7a43">Sasaran</text>';
@@ -2530,6 +2655,8 @@ function mjTodayHTML(s,cfg,now){
  if(!an.memCount&&!an.inprog){
   return '<div class="empty" style="margin-top:20px"><div class="e-ic">'+svg(ICONS.book,32)+'</div><div class="e-t">Belum ada hafazan direkod</div><div class="e-s">Rekod Tasmik atau Murajaah untuk '+esc(s.name.split(' ')[0])+' bagi mula menjana jadual.</div></div>';
  }
+ var lv=mjLevel(an);
+ h+='<div style="display:flex;align-items:center;gap:8px;margin-top:14px"><span class="field-lbl" style="margin:0">Tahap murajaah</span><span class="mj-chip" style="background:'+lv.color+';color:#fff">'+lv.label+'</span></div>';
  h+=mjKpis(an);
  h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="refresh"></span> Jadual Murajaah Hari Ini</div><span class="mj-chip">Kapasiti '+cfg.cap+' m/s</span></div>';
  if(an.chunks.length){
@@ -2540,10 +2667,12 @@ function mjTodayHTML(s,cfg,now){
     +'<div class="mj-ms">'+mjRange(c.a,c.b)+' <span style="font-weight:700;color:var(--ink-2);font-size:11.5px">· '+c.n+' m/s</span></div>'
     +'<div class="mj-sub">'+esc(surahLabel(c.a,c.b))+' · '+juzLabel(c.a,c.b)+'</div>'
     +'<div class="mj-late">'+late+'</div></div>'
-    +'<div class="mj-r"><span class="mj-ret">'+Math.round(c.minR*100)+'%</span>'
-    +'<button class="mj-ok" data-action="mj-done" data-a="'+c.a+'" data-b="'+c.b+'">Selesai</button></div></div>';
+    +'<div class="mj-r"><span class="mj-ret">'+Math.round(c.minR*100)+'%</span></div>'
+    +'<div class="mj-grades"><span class="gl">Nilai &amp; selesai:</span>'
+    +GRADE_ORDER.map(function(g){return '<button class="mj-gb" style="--gc:'+GRADES[g].color+'" data-action="mj-done" data-a="'+c.a+'" data-b="'+c.b+'" data-grade="'+g+'">'+GRADES[g].label+'</button>';}).join('')
+    +'</div></div>';
   }).join('');
-  h+='<button class="btn btn-primary btn-block" data-action="mj-done-all" style="margin-top:4px">'+svg(ICONS.check,17)+' Tandakan Semua Selesai</button>';
+  h+='<button class="btn btn-primary btn-block" data-action="mj-done-all" style="margin-top:4px">'+svg(ICONS.check,17)+' Tandakan Semua Selesai (tanpa penilaian)</button>';
   if(an.backlog>0)h+='<div class="mj-mid2">Masih ada <b>'+an.backlog+' m/s</b> tertunggak melebihi kapasiti '+cfg.cap+' m/s sehari. Muka surat dengan ingatan paling rendah diutamakan; selebihnya akan muncul pada hari berikutnya.</div>';
  }else if(an.memCount){
   h+='<div class="mj-good">Tiada murajaah tertunggak hari ini. Ingatan terjaga — teruskan hafazan baharu.</div>';
@@ -2551,7 +2680,7 @@ function mjTodayHTML(s,cfg,now){
   h+='<div class="mj-mid2">Hanya Talaqqi direkod setakat ini. Muka surat dikira dihafaz selepas disahkan melalui <b>Tasmik</b>.</div>';
  }
  h+='</div>';
- h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.layers,16)+' Peta Ingatan 604 Muka Surat</div><div class="mj-heat">'+mjHeat(an,cfg)+'</div>'+mjLegend(thr)+'</div>';
+ h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.layers,16)+' Peta Ingatan 604 Muka Surat</div><div class="mj-heat">'+mjHeat(an,cfg,now)+'</div>'+mjLegend(thr)+'</div>';
  if(an.upChunks.length){
   h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.calendar,16)+' Akan Tiba Masa (3 Hari)</div>'
    +an.upChunks.slice(0,6).map(function(c){
@@ -2565,7 +2694,7 @@ function mjTodayHTML(s,cfg,now){
   +'<li>Setiap <b>Murajaah / Tasmik / Tahriri</b> menambah S. Ulangan ketika ingatan sudah menurun memberi kesan paling besar; jika sudah terlalu lupa (&lt;40%), kesan lebih kecil.</li>'
   +'<li>Muka surat dijadualkan semula apabila ingatan mencecah <b>'+Math.round(thr*100)+'%</b> (selang paling lama 30 hari).</li>'
   +'<li>Muka surat yang pertama kali direkod sebagai Murajaah/Tahriri dianggap hafazan lama.</li></ul>'
-  +'<p>Nota: sistem belum merekod mutu bacaan (lancar/lemah), jadi semua ulangan dianggap berjaya. Ini <b>anggaran</b> untuk membantu guru, bukan pengganti penilaian guru.</p></details>';
+  +'<p><b>Mutu bacaan:</b> <i>Lancar</i> menambah kestabilan lebih besar; <i>Sederhana</i> (atau tiada penilaian) memberi kesan biasa; <i>Lemah</i> dianggap gagal ingat — kestabilan dikurangkan dan muka surat dijadualkan semula dengan cepat. Penilaian hanya untuk Talaqqi, Tasmik dan Murajaah.</p><p>Ini <b>anggaran</b> untuk membantu guru, bukan pengganti penilaian guru.</p></details>';
  var capOpts=[5,8,10,15,20,30].map(function(v){return '<option value="'+v+'"'+(v===cfg.cap?' selected':'')+'>'+v+' m/s</option>';}).join('');
  var thrOpts=[60,70,80].map(function(v){return '<option value="'+v+'"'+(v===Math.round(cfg.thr*100)?' selected':'')+'>'+v+'%</option>';}).join('');
  h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.cog,16)+' Tetapan Jadual (Semua Pelajar)</div><div class="mj-set">'
@@ -2578,19 +2707,23 @@ function mjKhatamHTML(s,cfg,now){
  var an=mjAnalyse(s,now,cfg),pr=mjProject(s,now,cfg,an),h='';
  var pct=Math.round(pr.pct*10)/10;
  h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.target,16)+' Kemajuan Khatam Hafazan</div>'
-  +'<div class="mj-big"><span class="v">'+pct+'%</span><span class="l">'+pr.M+' / '+TOTAL_PAGES+' m/s · '+pr.juz+' juz</span></div>'
+  +'<div class="mj-big"><span class="v">'+pct+'%</span><span class="l">'+(pr.pos?('M/S '+pr.pos+' / '+TOTAL_PAGES+' · '+pr.juz+' juz'):'Belum ada Tasmik')+'</span></div>'
   +'<div class="mj-bar"><div style="width:'+Math.max(1,Math.min(100,pct))+'%"></div></div>'
+  +(pr.pos?'<div class="mj-note">Tasmik terakhir: <b>'+mjRange(pr.posStart||pr.pos,pr.pos)+'</b> pada '+mjDate(pr.posTs)+'. Unjuran dikira daripada M/S '+pr.pos+' hingga M/S '+TOTAL_PAGES+'.</div>':'')
   +(an.inprog?'<div class="mj-note">Selain itu '+an.inprog+' m/s masih pada peringkat Talaqqi (belum disahkan Tasmik).</div>':'')
   +'</div>';
  if(pr.noData){
   return h+'<div class="mj-mid2">Belum ada rekod untuk membuat unjuran. Rekod hafazan pelajar ini dahulu.</div>';
+ }
+ if(pr.noTasmik){
+  return h+'<div class="mj-mid2">Belum ada rekod <b>Tasmik</b> bagi pelajar ini. Unjuran khatam dikira daripada muka surat Tasmik terakhir, jadi rekod Tasmik diperlukan dahulu.</div>';
  }
  if(pr.done){
   return h+'<div class="mj-good">Alhamdulillah — '+esc(s.name.split(' ')[0])+' telah khatam hafazan 30 juz. Fokus kini pada murajaah berkala.</div>';
  }
  h+='<div class="kpi-grid">'
   +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.hafazan)+';color:'+PC.hafazan+'">'+svg(ICONS.trend,16)+'</div><div class="k-v">'+(Math.round(pr.perWeek*10)/10)+' <small>m/s / minggu</small></div><div class="k-l">Kadar hafazan baharu ('+Math.round(pr.spanDays)+' hari lepas)</div></div>'
-  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.murajaah)+';color:'+PC.murajaah+'">'+svg(ICONS.page,16)+'</div><div class="k-v">'+pr.remain+' <small>m/s</small></div><div class="k-l">Baki untuk khatam</div></div></div>';
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.murajaah)+';color:'+PC.murajaah+'">'+svg(ICONS.page,16)+'</div><div class="k-v">'+pr.remain+' <small>m/s</small></div><div class="k-l">Baki: M/S '+(pr.pos+1)+' hingga '+TOTAL_PAGES+'</div></div></div>';
  if(pr.trend){
   var tr=pr.trend,msg=tr.recent>tr.prev?'meningkat':(tr.recent<tr.prev?'menurun':'sama');
   h+='<div class="mj-note" style="margin-top:8px">Trend: '+tr.recent+' m/s baharu dalam 14 hari terakhir berbanding '+tr.prev+' m/s dalam 14 hari sebelumnya ('+msg+').</div>';
@@ -2627,7 +2760,7 @@ function mjKhatamHTML(s,cfg,now){
   +(ratio>=1?'<div class="mj-warn">Beban melebihi kapasiti. Hafazan baharu yang terlalu laju akan menurunkan kualiti ingatan lama — kurangkan hafazan baharu atau naikkan masa murajaah.</div>'
    :(ratio>=0.8?'<div class="mj-mid2">Beban hampir penuh. Berhati-hati menambah hafazan baharu.</div>':''))
   +'</div>';
- h+='<div class="mj-note">Unjuran ialah <b>anggaran</b> berdasarkan kadar hafazan baharu '+Math.round(pr.spanDays)+' hari lepas (hari kalendar, bukan hari persekolahan). Muka surat yang mula-mula direkod sebagai Murajaah/Tahriri dianggap hafazan lama dan tidak dikira dalam kadar.</div>';
+ h+='<div class="mj-note">Unjuran ialah <b>anggaran</b>: baki muka surat dikira daripada <b>M/S Tasmik terakhir</b> hingga M/S '+TOTAL_PAGES+', dibahagi kadar hafazan baharu '+Math.round(pr.spanDays)+' hari lepas (hari kalendar, bukan hari persekolahan). Andaian: hafazan berjalan menaik ke arah M/S '+TOTAL_PAGES+'. Muka surat yang mula-mula direkod sebagai Murajaah/Tahriri dianggap hafazan lama dan tidak dikira dalam kadar.</div>';
  return h;
 }
 
@@ -2651,7 +2784,7 @@ function mjClassHTML(cfg,now){
   return '<button class="stud" data-action="mj-open" data-id="'+s.id+'">'
    +'<div class="st-av" style="background:'+avatarColor(s.id)+'">'+esc(initials(s.name))+'</div>'
    +'<div class="st-mid"><div class="st-n">'+esc(s.name)+'</div>'
-   +'<div class="st-meta"><span>'+an.memCount+' m/s ('+Math.round(pr.pct)+'%)</span><span>Ulang: '+an.due+'</span>'+(an.crit?'<span style="color:#e5484d">Kritikal: '+an.crit+'</span>':'')+'</div>'
+   +'<div class="st-meta"><span>'+(pr.pos?('M/S '+pr.pos+' ('+Math.round(pr.pct)+'%)'):'Belum Tasmik')+'</span><span>Ulang: '+an.due+'</span>'+(an.crit?'<span style="color:#e5484d">Kritikal: '+an.crit+'</span>':'')+'</div>'
    +'<div class="mj-stud-bar"><div style="width:'+Math.max(1,Math.min(100,pr.pct))+'%"></div></div></div>'
    +'<div class="st-r" style="text-align:right"><span class="mj-chip">'+esc(kh)+st+'</span></div></button>';
  }).join('')||'<div class="empty"><div class="e-t">Belum ada pelajar</div></div>';
@@ -2682,10 +2815,10 @@ function renderMurajaah(){
  paintIcons(el);
 }
 
-function mjDone(a,b){
+function mjDone(a,b,grade){
  var s=mjStudent();if(!s||!(a>=1)||!(b>=a))return;
- addRecord(s,{phase:'murajaah',start:a,end:b,note:'Murajaah pintar'});
- toast('Murajaah '+mjRange(a,b)+' direkod untuk '+s.name.split(' ')[0]+'.',true);
+ addRecord(s,{phase:'murajaah',start:a,end:b,note:'Murajaah pintar',grade:grade||''});
+ toast('Murajaah '+mjRange(a,b)+(grade&&GRADES[grade]?(' ('+GRADES[grade].label+')'):'')+' direkod untuk '+s.name.split(' ')[0]+'.',true);
  renderMurajaah();
 }
 function mjDoneAll(){
@@ -2801,6 +2934,81 @@ function repAttendanceSection(list,titleSuffix){
   +((list&&list.length)?repAttendanceBreak(list):'<div style="text-align:center;color:#a8969b;font-size:11.5px;padding:6px 0 14px">Tiada rekod kehadiran bagi tempoh ini.</div>');
 }
 
+/* ---------------- LAPORAN: MUTU BACAAN + MURAJAAH PINTAR + UNJURAN KHATAM ---------------- */
+function repAsOf(){
+ if(repMonthly()){var p=repPeriod.ym.split('-');var end=new Date(+p[0],+p[1],1).getTime()-1;return Math.min(Date.now(),end);}
+ return Date.now();
+}
+function repGradeSection(recs,title){
+ var gs=gradeStats(recs),any=0;
+ var rows=['talaqqi','tasmik','murajaah'].map(function(ph){
+  var o=gs[ph],rated=o.lancar+o.sederhana+o.lemah,bar='';any+=rated;
+  if(rated){bar='<div style="display:flex;height:9px;border-radius:99px;overflow:hidden;background:#f3ecee">'+GRADE_ORDER.map(function(g){return o[g]?'<div style="width:'+(o[g]/rated*100).toFixed(1)+'%;background:'+GRADES[g].color+'"></div>':'';}).join('')+'</div>';}
+  return '<tr><td><span class="rp-badge" style="background:'+PC[ph]+'">'+PHASES[ph].label+'</span></td>'
+   +'<td class="c">'+o.n+'</td><td class="c">'+o.lancar+'</td><td class="c">'+o.sederhana+'</td><td class="c">'+o.lemah+'</td><td class="c">'+o.nr+'</td>'
+   +'<td class="c">'+(rated?Math.round(o.lancar/rated*100)+'%':'—')+'</td><td style="width:110px">'+bar+'</td></tr>';
+ }).join('');
+ return '<div class="rp-sec-t">'+svg(ICONS.star,15)+' '+esc(title)+'</div>'
+  +'<table class="rp-tbl"><thead><tr><th>Fasa</th><th class="c">Rekod</th><th class="c">Lancar</th><th class="c">Sederhana</th><th class="c">Lemah</th><th class="c">Belum Dinilai</th><th class="c">% Lancar</th><th>Agihan</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  +(any?'':'<div class="rp-small">Belum ada penilaian mutu bacaan direkod bagi tempoh ini.</div>');
+}
+var REP_MJ_NOTE='Tahap murajaah: <b>Cemerlang</b> (ingatan purata ≥85% dan ≤10% muka surat perlu diulang), <b>Baik</b> (≥70% dan ≤25%), <b>Sederhana</b> (≥50%), <b>Perlu Perhatian</b> (&lt;50%). Tahap dan unjuran ialah anggaran berasaskan keluk kelupaan Ebbinghaus serta mutu bacaan yang direkod, dan tidak menggantikan penilaian guru. Anggaran khatam dikira daripada M/S Tasmik terakhir pelajar hingga M/S '+TOTAL_PAGES+', mengikut kadar hafazan baharu 28 hari terakhir.';
+function repMurajaahSection(s){
+ var cfg=mjCfg(),now=repAsOf(),an=mjAnalyse(s,now,cfg),pr=mjProject(s,now,cfg,an),lv=mjLevel(an);
+ var h='<div class="rp-sec-t">'+svg(ICONS.refresh,15)+' Murajaah Pintar &amp; Unjuran Khatam</div>'
+  +'<div class="rp-small" style="margin-top:-4px">Kedudukan '+(repMonthly()?'pada ':'setakat ')+mjDate(now)+'</div>';
+ if(!an.memCount&&!an.inprog){
+  return h+'<div style="text-align:center;color:#a8969b;font-size:11.5px;padding:6px 0 14px">Belum ada data hafazan untuk dianalisis.</div>';
+ }
+ h+=repKpi([['<span style="font-size:15px;color:'+lv.color+'">'+lv.label+'</span>','Tahap Murajaah'],[Math.round(an.avgR*100)+'%','Purata Kekuatan Ingatan'],[an.due+'','M/S Perlu Diulang'],[(pr.pos?('M/S '+pr.pos+' ('+(Math.round(pr.pct*10)/10)+'%)'):'—'),'M/S Tasmik Terkini']]);
+ var L=[];
+ if(pr.done){L.push('<b>Telah khatam</b> hafazan 30 juz.');}
+ else if(pr.noData){L.push('Belum cukup rekod untuk unjuran khatam.');}
+ else if(pr.noTasmik){L.push('Belum ada rekod <b>Tasmik</b>; unjuran khatam dikira daripada M/S Tasmik terakhir.');}
+ else{
+  L.push('Tasmik terakhir: <b>'+mjRange(pr.posStart||pr.pos,pr.pos)+'</b> ('+mjDate(pr.posTs)+'); baki <b>'+pr.remain+' m/s</b> ke M/S '+TOTAL_PAGES);
+  L.push('Kadar hafazan baharu: <b>'+(Math.round(pr.perWeek*10)/10)+' m/s seminggu</b> ('+Math.round(pr.spanDays)+' hari terakhir)');
+  if(pr.dates)L.push('Anggaran khatam: <b>'+mjDateTxt(pr.dates.cur,now)+'</b><br><span style="font-size:10.5px">Lambat '+mjDateTxt(pr.dates.pess,now)+' · Pantas '+mjDateTxt(pr.dates.opt,now)+'</span>');
+  else L.push('Tiada hafazan baharu dalam tempoh terkini; tarikh khatam belum dapat dianggar.');
+  if(pr.target&&pr.req!=null)L.push('Sasaran '+mjDate(pr.target)+': <b>'+mjStatusTxt(pr)+'</b> (perlu '+(Math.round(pr.req*7*10)/10)+' m/s seminggu)');
+  else if(pr.target)L.push('Sasaran '+mjDate(pr.target)+': <b>telah berlalu</b>');
+ }
+ L.push('Beban murajaah anggaran: <b>'+(Math.round(an.load*10)/10)+' m/s sehari</b>');
+ if(an.chunks.length)L.push('Diutamakan: '+an.chunks.slice(0,4).map(function(c){return '<b>'+mjRange(c.a,c.b)+'</b> ('+Math.round(c.minR*100)+'%)';}).join(', '));
+ h+='<div class="rp-mj"><div class="hm">'+mjHeat(an,cfg,now)+'</div><div class="tx">'
+  +L.map(function(x){return '<div class="ln2">'+x+'</div>';}).join('')+'</div></div>'
+  +mjLegend(cfg.thr);
+ if(!pr.noData&&!pr.done&&pr.dates){
+  h+='<div class="rp-chart-wrap" style="margin-top:12px"><div class="rp-small" style="margin:0 0 4px;font-weight:700;color:#6e565d">Unjuran Kemajuan Hafazan (M/S Tasmik terkini)</div>'+mjChart(an,pr,now)+'</div>';
+ }
+ return h+'<div class="rp-small">'+REP_MJ_NOTE+'</div>';
+}
+function repMurajaahClass(){
+ var cfg=mjCfg(),now=repAsOf();
+ var data=rankedPeriod().map(function(s){var an=mjAnalyse(s,now,cfg);return {s:s,an:an,pr:mjProject(s,now,cfg,an),lv:mjLevel(an)};});
+ var n=data.length||1;
+ var avgMem=Math.round(data.reduce(function(t,d){return t+d.pr.pos;},0)/n);
+ var withData=data.filter(function(d){return d.an.memCount>0;});
+ var avgRet=withData.length?Math.round(withData.reduce(function(t,d){return t+d.an.avgR;},0)/withData.length*100):0;
+ var good=data.filter(function(d){return d.lv.k==='cemerlang'||d.lv.k==='baik';}).length;
+ var dueN=data.filter(function(d){return d.an.due>0;}).length;
+ var rows=data.map(function(d,i){
+  var kh=d.pr.done?'Khatam':((d.pr.dates)?mjDateTxt(d.pr.dates.cur,now):'—');
+  return '<tr><td class="c">'+(i+1)+'</td><td>'+esc(d.s.name)+'</td>'
+   +'<td class="c">'+(d.pr.pos?('M/S '+d.pr.pos+' ('+Math.round(d.pr.pct)+'%)'):'—')+'</td>'
+   +'<td class="c">'+(d.an.memCount?Math.round(d.an.avgR*100)+'%':'—')+'</td>'
+   +'<td class="c">'+d.an.due+'</td>'
+   +'<td class="c"><span class="rp-lv" style="background:'+d.lv.color+'">'+d.lv.label+'</span></td>'
+   +'<td class="c">'+kh+'</td>'
+   +(cfg.khatam?'<td class="c">'+(d.pr.done?'—':mjStatusTxt(d.pr))+'</td>':'')+'</tr>';
+ }).join('');
+ return '<div class="rp-sec-t">'+svg(ICONS.refresh,15)+' Murajaah Pintar &amp; Unjuran Khatam (Kelas)</div>'
+  +'<div class="rp-small" style="margin-top:-4px">Kedudukan '+(repMonthly()?'pada ':'setakat ')+mjDate(now)+(cfg.khatam?(' · Sasaran khatam kelas: '+mjDate(new Date(cfg.khatam+'T00:00:00').getTime())):'')+'</div>'
+  +repKpi([['M/S '+avgMem,'Purata M/S Tasmik Terkini'],[avgRet+'%','Purata Kekuatan Ingatan'],[good+' / '+data.length,'Tahap Baik / Cemerlang'],[dueN+'','Pelajar Ada Tertunggak']])
+  +'<table class="rp-tbl"><thead><tr><th class="c">#</th><th>Nama Pelajar</th><th class="c">M/S Tasmik Terkini</th><th class="c">Ingatan</th><th class="c">Perlu Ulang</th><th class="c">Tahap</th><th class="c">Anggaran Khatam</th>'+(cfg.khatam?'<th class="c">Sasaran</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table>'
+  +'<div class="rp-small">'+REP_MJ_NOTE+'</div>';
+}
+
 function buildClassReport(){
  var K=state.klass, M=repMonthly(), ym=repPeriod.ym;
  var ranked=rankedPeriod();
@@ -2838,6 +3046,8 @@ function buildClassReport(){
    +'<div class="rp-sec-t">'+svg(ICONS.layers,15)+' Pecahan Mengikut Fasa ('+(M?ymLabel(ym):'Keseluruhan Kelas')+')</div>'
    +repPhaseBreak(allRecs)
    +(M?repChart(weekSeries(allRecs,ym),'Kemajuan Mata Kelas — '+ymLabel(ym)+' (Mingguan)'):repChart(seriesFor(allRecs,'week'),'Kemajuan Mata Kelas (7 Hari Terakhir)'))
+   +repGradeSection(allRecs,'Mutu Bacaan Kelas'+(M?(' ('+ymLabel(ym)+')'):''))
+   +repMurajaahClass()
    +repAttendanceSection(allAtt,'Kelas')
    +'<div class="rp-sign"><div><div class="ln"></div>Tandatangan Guru</div><div><div class="ln"></div>Tandatangan Penyelia</div></div>'
    +'<div class="rp-note">Laporan ini dijana secara automatik oleh sistem MyUA — Sistem Rekod Hafazan al-Quran.<br>Mata dikira berdasarkan tetapan fasa semasa. © MyUA '+new Date().getFullYear()+'</div>'
@@ -2854,8 +3064,9 @@ function buildStudentReport(s,pageBreak){
    +'<td class="c">'+(r.start===r.end?('M/S '+r.start):('M/S '+r.start+'–'+r.end))+'</td>'
    +'<td class="c">'+juzLabel(r.start,r.end).replace('Juz ','J')+'</td>'
    +'<td>'+esc(surahLabel(r.start,r.end))+'</td>'
+   +'<td class="c">'+((r.grade&&GRADES[r.grade]&&GRADED[r.phase])?('<span class="rp-badge" style="background:'+GRADES[r.grade].color+'">'+GRADES[r.grade].label+'</span>'):'—')+'</td>'
    +'<td>'+esc(r.note||'-')+'</td><td class="r">'+recPoints(r)+'</td></tr>';
- }).join(''):'<tr><td colspan="7" style="text-align:center;color:#a8969b;padding:14px">'+(M?'Tiada rekod hafazan pada bulan ini.':'Tiada rekod hafazan lagi.')+'</td></tr>';
+ }).join(''):'<tr><td colspan="8" style="text-align:center;color:#a8969b;padding:14px">'+(M?'Tiada rekod hafazan pada bulan ini.':'Tiada rekod hafazan lagi.')+'</td></tr>';
  var mata=mataOf(pr);
  var info=[['Kelas',K.name||'-'],['Guru',K.guru||'-'],['No. Pelajar',String(s.no||'-')],['Kedudukan Kelas','#'+rank+' daripada '+state.students.length]];
  if(M){
@@ -2875,7 +3086,9 @@ function buildStudentReport(s,pageBreak){
    +repPhaseBreak(pr)
    +(M?repChart(weekSeries(pr,ym),'Kemajuan Mata — '+ymLabel(ym)+' (Mingguan)'):repChart(seriesFor(pr,'week'),'Kemajuan Mata (7 Hari Terakhir)'))
    +'<div class="rp-sec-t">'+svg(ICONS.list,15)+' Senarai Rekod Hafazan ('+recs.length+')</div>'
-   +'<table class="rp-tbl"><thead><tr><th class="c">Tarikh</th><th>Fasa</th><th class="c">Muka Surat</th><th class="c">Juz</th><th>Surah</th><th>Catatan</th><th class="r">Mata</th></tr></thead><tbody>'+rowHTML+'</tbody></table>'
+   +'<table class="rp-tbl"><thead><tr><th class="c">Tarikh</th><th>Fasa</th><th class="c">Muka Surat</th><th class="c">Juz</th><th>Surah</th><th class="c">Mutu</th><th>Catatan</th><th class="r">Mata</th></tr></thead><tbody>'+rowHTML+'</tbody></table>'
+   +repGradeSection(pr,'Mutu Bacaan'+(M?(' ('+ymLabel(ym)+')'):''))
+   +repMurajaahSection(s)
    +repAttendanceSection(periodAtt(s.attendance),esc(s.name.split(' ')[0]))
    +'<div class="rp-sign"><div><div class="ln"></div>Tandatangan Guru</div><div><div class="ln"></div>Tandatangan Ibu Bapa / Penjaga</div></div>'
    +'<div class="rp-note">Laporan ini dijana secara automatik oleh sistem MyUA.<br>© MyUA '+new Date().getFullYear()+'</div>'
@@ -3019,7 +3232,8 @@ document.addEventListener('click',function(e){
   case 'rep-next':stepRepMonth(1);break;
   case 'mj-view':mjView=el.getAttribute('data-view')||'today';renderMurajaah();break;
   case 'mj-open':mjSel=el.getAttribute('data-id');mjView='today';navTo('murajaah');break;
-  case 'mj-done':mjDone(+el.getAttribute('data-a'),+el.getAttribute('data-b'));break;
+  case 'set-grade':setGrade(el.getAttribute('data-grade'));break;
+  case 'mj-done':mjDone(+el.getAttribute('data-a'),+el.getAttribute('data-b'),el.getAttribute('data-grade'));break;
   case 'mj-done-all':mjDoneAll();break;
   case 'report-class':reportClass();break;
   case 'report-one':reportStudent(document.getElementById('rep-student').value);break;
