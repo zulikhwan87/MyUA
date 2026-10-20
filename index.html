@@ -1723,6 +1723,7 @@ function analisisKelasHTML(){
   +'</div>'
   +'<div class="chart-card"><div class="chart-head"><div class="c-t">Kemajuan Kelas (7 Hari)</div><div class="c-legend">Mata</div></div><div class="chart-wrap">'+chartSVG(series)+'</div></div>'
   +'<div class="section" style="margin-top:2px"><div class="sec-head"><div class="sec-title"><span data-ic="medal"></span> Ranking Pelajar</div></div><div class="chart-card" style="margin-bottom:15px">'+rankHTML+'</div></div>'
+  +posRankSectionHTML()
   +'<div class="section" style="margin-top:2px"><div class="sec-head"><div class="sec-title"><span data-ic="layers"></span> Pecahan Fasa Kelas</div></div><div class="brk">'+(allRecs.length?brk:'<div style="text-align:center;color:var(--ink-3);font-size:12px;padding:10px">Tiada rekod lagi.</div>')+'</div></div>'
   +analisisKehadiranKelasHTML();
 }
@@ -2999,7 +3000,7 @@ function annStatus(s,now){
  var t=+s.tingkatan,T=FORM_TARGETS[t];
  if(!T)return null;
  var cfg=mjCfg(),an=mjAnalyse(s,now,cfg),pr=mjProject(s,now,cfg,an);
- var out={t:t,T:T,now:now,pos:pr.pos,rate:pr.rate||0,perWeek:pr.perWeek||0,noTasmik:!!(pr.noTasmik||pr.noData)};
+ var out={t:t,T:T,now:now,pos:pr.pos,posTs:pr.posTs||0,rate:pr.rate||0,perWeek:pr.perWeek||0,noTasmik:!!(pr.noTasmik||pr.noData)};
  var endTs=new Date(annEnd(now)+'T23:59:59').getTime();
  out.endTs=endTs;
  out.total=T.end-T.start+1;
@@ -3036,6 +3037,7 @@ function annCardHTML(s,now){
   +'<div class="mj-bar"><div style="width:'+Math.max(1,Math.min(100,pct))+'%"></div></div>'
   +'<div style="margin-top:10px"><span class="mj-chip" style="background:'+ANN_COLOR[A.status]+';color:#fff">'+ANN_LABEL[A.status]+'</span> <span class="mj-note" style="margin:0 0 0 6px">Kedudukan Tasmik: M/S '+A.pos+(A.reached?'':(' · baki '+A.remain+' m/s'))+'</span></div>'
   +annLines(A).map(function(x){return '<div class="mj-note">'+x+'</div>';}).join('')
+  +posRankLineHTML(s,A.now,'mj-note')
   +'</div>';
 }
 function repAnnualSection(s){
@@ -3045,35 +3047,30 @@ function repAnnualSection(s){
   +'<div class="rp-small" style="margin-top:-4px">Sasaran: '+annTargetText(A.t)+' · Tarikh akhir: '+mjDate(A.endTs)+' · Kedudukan '+(repMonthly()?'pada ':'setakat ')+mjDate(A.now)+'</div>'
   +'<div class="rp-bar"><div style="width:'+Math.max(1,Math.min(100,A.pct)).toFixed(1)+'%"></div></div>'
   +repKpi([['M/S '+A.pos,'Kedudukan Tasmik'],[(Math.round(A.pct*10)/10)+'%','Pencapaian Sasaran'],[(A.reached?'Tercapai':(A.remain+' m/s')),'Baki ke M/S '+A.T.end],['<span style="font-size:14px;color:'+ANN_COLOR[A.status]+'">'+ANN_LABEL[A.status]+'</span>','Status']]);
- h+='<div style="font-size:11.5px;line-height:1.7;color:#6e565d;margin-bottom:12px">'+annLines(A).map(function(x){return '<div>'+x+'</div>';}).join('')+'</div>';
+ h+='<div style="font-size:11.5px;line-height:1.7;color:#6e565d;margin-bottom:12px">'+annLines(A).map(function(x){return '<div>'+x+'</div>';}).join('')+posRankLineHTML(s,A.now,'')+'</div>';
  return h;
 }
 function repAnnualClass(){
- var now=repAsOf(),groups={},unset=0;
- state.students.forEach(function(s){
-  var A=annStatus(s,now);
-  if(!A){unset++;return;}
-  (groups[A.t]=groups[A.t]||[]).push({s:s,A:A});
- });
- var ts=Object.keys(groups).map(Number).sort();
- if(!ts.length)return '';
- var h='<div class="rp-sec-t">'+svg(ICONS.target,15)+' Sasaran Hafazan Tahunan (Kelas)</div>'
+ var now=repAsOf(),d=posRankingData(now);
+ if(!d.groups.length)return '';
+ var h='<div class="rp-sec-t">'+svg(ICONS.target,15)+' Sasaran Hafazan Tahunan &amp; Ranking Kedudukan M/S (Kelas)</div>'
   +'<div class="rp-small" style="margin-top:-4px">Tarikh akhir sasaran: '+mjDate(new Date(annEnd(now)+'T23:59:59').getTime())+' · Kedudukan '+(repMonthly()?'pada ':'setakat ')+mjDate(now)+'</div>';
- ts.forEach(function(t){
-  var g=groups[t].sort(function(a,b){return b.A.pct-a.A.pct||a.s.no-b.s.no;});
-  var reached=g.filter(function(x){return x.A.reached;}).length;
-  var onTrack=g.filter(function(x){return x.A.status==='ok'||x.A.status==='capai';}).length;
-  var avg=Math.round(g.reduce(function(a,x){return a+x.A.pct;},0)/g.length);
-  h+='<div class="rp-grp">Tingkatan '+t+' — '+annTargetText(t)+'<span>'+g.length+' pelajar · purata '+avg+'% · tercapai '+reached+' · menepati '+onTrack+'</span></div>';
-  h+='<table class="rp-tbl"><thead><tr><th class="c">#</th><th>Nama Pelajar</th><th class="c">Kedudukan</th><th class="c">Pencapaian</th><th class="c">Baki</th><th class="c">Anggaran Capai</th><th class="c">Status</th></tr></thead><tbody>'
-   +g.map(function(x,i){
+ d.groups.forEach(function(g){
+  var rows=g.rows;
+  var reached=rows.filter(function(x){return x.A.reached;}).length;
+  var onTrack=rows.filter(function(x){return x.A.status==='ok'||x.A.status==='capai';}).length;
+  var avg=Math.round(rows.reduce(function(a,x){return a+x.A.pct;},0)/rows.length);
+  h+='<div class="rp-grp">Tingkatan '+g.t+' — '+annTargetText(g.t)+'<span>'+rows.length+' pelajar · purata '+avg+'% · tercapai '+reached+' · menepati '+onTrack+'</span></div>';
+  h+='<table class="rp-tbl"><thead><tr><th class="c">Ranking</th><th>Nama Pelajar</th><th class="c">Kedudukan M/S</th><th class="c">Pencapaian</th><th class="c">Baki</th><th class="c">Anggaran Capai</th><th class="c">Status</th></tr></thead><tbody>'
+   +rows.map(function(x){
     var A=x.A;
-    return '<tr><td class="c">'+(i+1)+'</td><td>'+esc(x.s.name)+'</td><td class="c">'+(A.pos?('M/S '+A.pos):'—')+'</td><td class="c">'+Math.round(A.pct)+'%</td>'
+    return '<tr class="'+((x.rank&&x.rank<=3)?'top':'')+'"><td class="c">'+(x.rank||'—')+'</td><td>'+esc(x.s.name)+'</td><td class="c">'+(A.pos?('M/S '+A.pos):'—')+'</td><td class="c">'+Math.round(A.pct)+'%</td>'
      +'<td class="c">'+(A.reached?'—':(A.remain+' m/s'))+'</td><td class="c">'+(A.reached?'—':(A.etaTs?mjDateTxt(A.etaTs,now):'—'))+'</td>'
      +'<td class="c"><span class="rp-lv" style="background:'+ANN_COLOR[A.status]+'">'+ANN_LABEL[A.status]+'</span></td></tr>';
    }).join('')+'</tbody></table>';
  });
- if(unset)h+='<div class="rp-small">'+unset+' pelajar belum ditetapkan tingkatan dan tidak disenaraikan di atas.</div>';
+ if(d.unset)h+='<div class="rp-small">'+d.unset+' pelajar belum ditetapkan tingkatan dan tidak disenaraikan di atas.</div>';
+ h+='<div class="rp-small">Ranking dikira dalam tingkatan yang sama berdasarkan M/S Tasmik terkini. Kedudukan M/S yang sama berkongsi ranking; susunan antara mereka mengikut siapa mencapainya dahulu. Ranking ini berasingan daripada ranking jumlah mata.</div>';
  return h;
 }
 document.addEventListener('change',function(e){
@@ -3085,6 +3082,69 @@ document.addEventListener('change',function(e){
   saveState();toast((v>=1?('Tingkatan '+v):'Tingkatan dikosongkan')+' — '+s.name.split(' ')[0]+'.',true);
  }
 });
+
+/* ---------------- RANKING KEDUDUKAN M/S (mengikut tingkatan) ---------------- */
+/* Pelajar dibandingkan hanya dengan pelajar dalam tingkatan yang sama, berdasarkan M/S Tasmik terkini.
+   Kedudukan M/S yang sama berkongsi ranking; susunan antara mereka ikut siapa mencapainya dahulu, kemudian jumlah mata. */
+function posRankingData(now){
+ var groups={},unset=0;
+ state.students.forEach(function(s){
+  var A=annStatus(s,now);
+  if(!A){unset++;return;}
+  (groups[A.t]=groups[A.t]||[]).push({s:s,A:A});
+ });
+ var out=Object.keys(groups).map(Number).sort(function(a,b){return a-b;}).map(function(t){
+  var rows=groups[t].sort(function(x,y){
+   if(y.A.pos!==x.A.pos)return y.A.pos-x.A.pos;
+   var tx=x.A.posTs||Infinity,ty=y.A.posTs||Infinity;
+   if(tx!==ty)return tx-ty;
+   var d=studentTotal(y.s)-studentTotal(x.s);
+   if(d)return d;
+   return (x.s.no||0)-(y.s.no||0);
+  });
+  rows.forEach(function(r,i){
+   if(!(r.A.pos>0)){r.rank=null;return;}
+   if(i>0&&rows[i-1].rank&&rows[i-1].A.pos===r.A.pos)r.rank=rows[i-1].rank;else r.rank=i+1;
+  });
+  return {t:t,T:FORM_TARGETS[t],rows:rows};
+ });
+ return {groups:out,unset:unset};
+}
+function posRankOf(s,now){
+ var d=posRankingData(now),i,g;
+ for(g=0;g<d.groups.length;g++){
+  for(i=0;i<d.groups[g].rows.length;i++){
+   if(d.groups[g].rows[i].s.id===s.id)return {rank:d.groups[g].rows[i].rank,n:d.groups[g].rows.length,t:d.groups[g].t};
+  }
+ }
+ return null;
+}
+function posRankLineHTML(s,now,cls){
+ var r=posRankOf(s,now);
+ if(!r||!r.rank)return '';
+ return '<div'+(cls?(' class="'+cls+'"'):'')+'>Ranking kedudukan M/S dalam Tingkatan '+r.t+': <b>#'+r.rank+' daripada '+r.n+' pelajar</b></div>';
+}
+function posRankSectionHTML(){
+ var d=posRankingData(Date.now());
+ var h='<div class="section" style="margin-top:2px"><div class="sec-head"><div class="sec-title"><span data-ic="trend"></span> Ranking Kedudukan M/S (Tingkatan)</div></div>';
+ if(!d.groups.length){
+  return h+'<div class="chart-card" style="margin-bottom:15px"><div style="text-align:center;color:var(--ink-3);font-size:12px;padding:12px;line-height:1.6">Tetapkan <b>tingkatan</b> setiap pelajar di <b>Tetapan → Senarai Pelajar</b> untuk melihat ranking ini.</div></div></div>';
+ }
+ d.groups.forEach(function(g){
+  var ranked=g.rows.filter(function(r){return r.rank;}).length;
+  h+='<div class="chart-card" style="margin-bottom:12px"><div class="chart-head"><div class="c-t">Tingkatan '+g.t+'</div><div class="c-legend">'+esc(annTargetText(g.t))+'</div></div>'
+   +g.rows.map(function(r){
+    var w=Math.max(2,Math.min(100,Math.round(r.A.pct)));
+    var medal=(r.rank&&r.rank<=3)?' style="color:#b8860b"':'';
+    return '<div class="rankrow"><div class="rk-i"'+medal+'>'+(r.rank||'—')+'</div><div class="rk-n">'+esc(r.s.name)+'</div>'
+     +'<div class="rk-bar"><div class="rk-fill" style="width:'+w+'%"></div></div><div class="rk-v" style="width:62px">'+(r.A.pos>0?('M/S '+r.A.pos):'—')+'</div></div>';
+   }).join('')
+   +'<div class="mj-note" style="margin-top:8px">'+g.rows.length+' pelajar'+(ranked<g.rows.length?(' · '+(g.rows.length-ranked)+' belum ada Tasmik'):'')+'. Bar menunjukkan pencapaian sasaran tahunan.</div></div>';
+ });
+ if(d.unset)h+='<div class="mj-note" style="margin:0 2px 12px">'+d.unset+' pelajar belum ditetapkan tingkatan dan tidak disenaraikan.</div>';
+ h+='<div class="mj-note" style="margin:0 2px 15px">Pelajar hanya dibandingkan dengan pelajar dalam tingkatan yang sama, berdasarkan M/S Tasmik terkini. Kedudukan yang sama berkongsi ranking.</div></div>';
+ return h;
+}
 
 /* ---------------- ULASAN GURU (perenggan mesra ibu bapa, boleh disunting) ---------------- */
 var cmSel=null;
