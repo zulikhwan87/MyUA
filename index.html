@@ -2223,7 +2223,7 @@ function parentFetch(auto){
    appReady=true;parentSetChild(0);enterApp();return;
   }
   cloudCfg.loggedIn=false;saveCloudCfg();if(auto)showLogin();
-  lgErr(res&&res.error==='locked'?'Terlalu banyak percubaan. Cuba lagi selepas 15 minit.':'Kod atau kata laluan salah.');
+  lgErr(!res?'Gagal menyambung ke sistem.':res.error==='locked'?'Terlalu banyak percubaan. Cuba lagi selepas 15 minit.':res.error==='no-match'?'Kod atau kata laluan salah, atau guru belum menyegerak data ke Sheet.':'Pelayan belum dikemas kini untuk log masuk ibu bapa ('+(res.error||'ralat')+').');
  }).catch(function(){if(auto)showLogin();lgErr('Tiada sambungan ke sistem.');});
 }
 function parentSetChild(i){
