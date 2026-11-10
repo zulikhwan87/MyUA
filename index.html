@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#4a1020">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MyUA">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="MyUA — Sistem rekod hafazan al-Quran untuk kelas: urus pelajar, analisis kelas & individu, jana laporan PDF keseluruhan & bulanan.">
 <title>MyUA — Sistem Rekod Hafazan Ulul Albab</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
@@ -644,13 +650,35 @@ table.rp-tbl tr.top td{font-weight:800}
 .lg-error{min-height:0;color:var(--danger);font-size:12px;font-weight:700;text-align:center;margin:12px 0 0;line-height:1.4}
 .lg-error:empty{margin:0}
 .lg-offline{display:block;width:100%;text-align:center;margin-top:12px;font-size:12px;font-weight:700;color:var(--ink-3);padding:6px}
+.par-bar{display:none}
+body.parent-mode .par-bar{display:flex;align-items:center;gap:8px;padding:calc(var(--safe-top) + 8px) 12px 8px;background:var(--g-dark);color:#fff;flex:none}
+.par-bar .pb-t{flex:1;min-width:0;font-size:12.5px;font-weight:800;line-height:1.25}
+.par-bar select{background:rgba(255,255,255,.14);color:#fff;border-radius:10px;padding:6px 8px;font-size:13px;max-width:55%}
+.par-bar select option{color:#2b1a20}
+.par-bar button{font-size:12px;font-weight:800;background:rgba(255,255,255,.16);border-radius:10px;padding:7px 12px}
+body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.parent-mode .nav-item[data-nav="pelajar"],body.parent-mode .hero-back,body.parent-mode #s-analisis .mode-toggle,body.parent-mode #ana-picker{display:none!important}
+#installBar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(412px,calc(100% - 24px));z-index:9999;background:#fff;color:var(--ink);border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,.35);padding:12px;align-items:center;gap:10px;border:1px solid var(--line)}
+#installBar.on{display:flex}
+#installBar img{width:42px;height:42px;border-radius:11px;flex:none}
+#installBar .ib-t{flex:1;min-width:0;font-size:12.5px;line-height:1.35}
+#installBar .ib-t b{display:block;font-size:14px;color:var(--g)}
+#installBar .ib-go{background:linear-gradient(135deg,var(--g-mid),var(--g-dark));color:#fff;font-weight:800;font-size:13px;border-radius:12px;padding:10px 14px;flex:none}
+#installBar .ib-x{font-size:20px;line-height:1;color:var(--ink-3);padding:4px 6px;flex:none}
+@media print{#installBar{display:none!important}}
 </style>
 </head>
 <body>
 <!-- Bekas laporan untuk cetak / muat turun PDF (mesti SEBELUM .app supaya .app melukis di atasnya) -->
 <div id="printRoot"></div>
+<div id="installBar" role="dialog" aria-label="Pasang MyUA">
+  <img src="icon-192.png" alt="">
+  <div class="ib-t" id="ib-text"><b>Pasang MyUA</b>Buka terus dari skrin utama telefon.</div>
+  <button class="ib-go" id="ib-go" type="button">Pasang</button>
+  <button class="ib-x" id="ib-x" type="button" aria-label="Tutup">&times;</button>
+</div>
 <div class="app" id="app">
 
+  <div class="par-bar" id="par-bar"></div>
   <div class="content" id="content">
 
     <!-- ============ LOG MASUK ============ -->
@@ -669,6 +697,7 @@ table.rp-tbl tr.top td{font-weight:800}
             <div class="mode-toggle" id="lg-role-toggle" style="margin-bottom:16px">
               <button data-lg-role="guru">Guru</button>
               <button data-lg-role="penyelaras">Penyelaras</button>
+              <button data-lg-role="ibubapa">Ibu Bapa</button>
             </div>
 
             <div id="lg-guru-block">
@@ -683,6 +712,14 @@ table.rp-tbl tr.top td{font-weight:800}
               <label class="lg-lbl">Kod Penyelaras</label>
               <input class="lg-input" id="lg-key" type="password" autocomplete="current-password" placeholder="Kod rahsia penyelaras">
               <div class="lg-hint">Kod yang sama seperti <b>ADMIN_KEY</b> dalam Code.gs.</div>
+            </div>
+
+            <div id="lg-ibubapa-block" style="display:none">
+              <label class="lg-lbl">Kod Ibu Bapa</label>
+              <input class="lg-input" id="lg-puser" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Kod yang diberi oleh guru">
+              <label class="lg-lbl">Kata Laluan</label>
+              <input class="lg-input" id="lg-ppin" type="password" autocomplete="current-password" placeholder="Kata laluan ibu bapa">
+              <div class="lg-hint">Anda hanya boleh melihat laporan &amp; analisis <b>anak anda</b>. Dapatkan kod dan kata laluan daripada guru.</div>
             </div>
 
             <details class="lg-adv" id="lg-adv">
@@ -941,6 +978,11 @@ table.rp-tbl tr.top td{font-weight:800}
         <label class="field-lbl" for="sm-tkt"><span data-ic="book"></span>Tingkatan (untuk sasaran tahunan)</label>
         <select class="picker" id="sm-tkt"><option value="">Belum ditetapkan</option><option value="1">Tingkatan 1</option><option value="2">Tingkatan 2</option><option value="3">Tingkatan 3</option><option value="4">Tingkatan 4</option><option value="5">Tingkatan 5</option></select>
       </div>
+      <div class="field">
+        <label class="field-lbl" for="sm-puser"><span data-ic="users"></span>Akaun Ibu Bapa (pilihan)</label>
+        <input class="input" id="sm-puser" placeholder="Kod ibu bapa, cth: ahmad2026" autocapitalize="off" autocomplete="off">
+        <input class="input" id="sm-ppin" type="password" placeholder="Kata laluan ibu bapa (kosong = kekal)" autocomplete="new-password" style="margin-top:8px">
+      </div>
       <button class="btn btn-primary btn-block" id="sm-save" style="margin-top:4px"><span data-ic="save"></span> Simpan Pelajar</button>
       <button class="btn btn-line btn-block" data-action="modal-close" style="margin-top:9px">Batal</button>
     </div>
@@ -1110,7 +1152,7 @@ const LS_KEY='myua_v2';
 const LS_OLD='myua_v1';
 var memFallback=null;
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return (k===LS_KEY)?memFallback:null;}}
-function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){if(k===LS_KEY)memFallback=v;}}
+function lsSet(k,v){if(parentMode&&k===LS_KEY)return;try{localStorage.setItem(k,v);}catch(e){if(k===LS_KEY)memFallback=v;}}
 
 function defaultPoints(){var o={};PHASE_ORDER.forEach(function(k){o[k]=PHASES[k].pts;});return o;}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
@@ -1180,6 +1222,7 @@ function normalizeState(d){
  var students=Array.isArray(d.students)?d.students.map(function(s,i){
   var o0={id:s.id||uid(),no:(s.no!=null?s.no:i+1),name:s.name||('Pelajar '+(i+1)),records:Array.isArray(s.records)?s.records:[],attendance:Array.isArray(s.attendance)?s.attendance:[],meta:s.meta||{created:Date.now()}};
   var tk=parseInt(s.tingkatan,10);if(tk>=1&&tk<=5)o0.tingkatan=tk;
+  if(s.parent&&s.parent.user&&s.parent.ph)o0.parent={user:String(s.parent.user),ph:String(s.parent.ph)};
   return o0;
  }):[];
  var activeId=d.activeId;
@@ -1829,6 +1872,7 @@ function renderLaporan(){
     +'</div>'
   +'</div>';
  paintIcons(document.getElementById('s-laporan'));
+ if(parentMode){['[data-action="report-class"]','[data-action="report-all-ind"]','#rep-student','#cm-card'].forEach(function(q){var e=document.querySelector('#s-laporan '+q);if(!e)return;var o=(q.charAt(0)==='#')?e:e.closest('.rep-opt');if(o)o.style.display='none';});}
  var st=document.getElementById('rep-student');if(st&&keepStud&&studentById(keepStud))st.value=keepStud;
  var pw=document.getElementById('rep-preview-wrap');if(pw)pw.classList.remove('on');
  activeReport=null;
@@ -1878,6 +1922,8 @@ function openStudentModal(id){
  document.getElementById('sm-name').value=s?s.name:'';
  document.getElementById('sm-no').value=s?(s.no||''):(state.students.length+1);
  document.getElementById('sm-tkt').value=(s&&s.tingkatan)?String(s.tingkatan):'';
+ document.getElementById('sm-puser').value=(s&&s.parent)?s.parent.user:'';
+ document.getElementById('sm-ppin').value='';
  document.getElementById('studentModal').classList.add('on');
  setTimeout(function(){try{document.getElementById('sm-name').focus();}catch(e){}},60);
 }
@@ -1888,20 +1934,30 @@ function saveStudentModal(){
  if(!name){toast('Sila masukkan nama pelajar.',false);shake('sm-name');return;}
  if(isNaN(no)||no<1)no=state.students.length+1;
  var tkt=parseInt(document.getElementById('sm-tkt').value,10);
- if(editingStudentId){
-  var s=studentById(editingStudentId);
-  if(s){s.name=name;s.no=no;if(tkt>=1&&tkt<=5)s.tingkatan=tkt;else delete s.tingkatan;}
-  toast('Maklumat pelajar dikemaskini.',true);
- }else{
-  var ns={id:uid(),no:no,name:name,records:[],attendance:[],meta:{created:Date.now()}};
-  if(tkt>=1&&tkt<=5)ns.tingkatan=tkt;
-  state.students.push(ns);
-  if(!state.activeId)state.activeId=ns.id;
-  toast('Pelajar ditambah.',true);
- }
- saveState();closeStudentModal();renderAll();
- if(document.getElementById('s-tetapan').classList.contains('on'))renderTetapan();
- if(document.getElementById('s-pelajar').classList.contains('on'))renderStudents();
+ var pu=document.getElementById('sm-puser').value.trim().toLowerCase(),pp=document.getElementById('sm-ppin').value;
+ var old=editingStudentId?studentById(editingStudentId):null;
+ var finish=function(par){
+  if(par&&state.students.some(function(x){return x!==old&&x.parent&&x.parent.user===par.user&&x.parent.ph!==par.ph;})){toast('Kod ibu bapa ini sudah digunakan dengan kata laluan lain.',false);shake('sm-puser');return;}
+  if(old){
+   old.name=name;old.no=no;if(tkt>=1&&tkt<=5)old.tingkatan=tkt;else delete old.tingkatan;
+   if(par)old.parent=par;else delete old.parent;
+   toast('Maklumat pelajar dikemaskini.',true);
+  }else{
+   var ns={id:uid(),no:no,name:name,records:[],attendance:[],meta:{created:Date.now()}};
+   if(tkt>=1&&tkt<=5)ns.tingkatan=tkt;
+   if(par)ns.parent=par;
+   state.students.push(ns);
+   if(!state.activeId)state.activeId=ns.id;
+   toast('Pelajar ditambah.',true);
+  }
+  saveState();closeStudentModal();renderAll();
+  if(document.getElementById('s-tetapan').classList.contains('on'))renderTetapan();
+  if(document.getElementById('s-pelajar').classList.contains('on'))renderStudents();
+ };
+ if(!pu){finish(null);return;}
+ if(pp){parentHash(pu,pp).then(function(h){finish({user:pu,ph:h});});return;}
+ if(old&&old.parent&&old.parent.user===pu){finish(old.parent);return;}
+ toast('Sila isi kata laluan ibu bapa.',false);shake('sm-ppin');
 }
 function delStudent(id){
  var s=studentById(id);if(!s)return;
@@ -1917,6 +1973,7 @@ function delStudent(id){
 /* ---------------- RENDER ALL & NAV ---------------- */
 function renderAll(){renderHome();renderRekodHeader();renderList();refreshFasaSave();}
 function navTo(name){
+ if(parentMode&&name!=='laporan')name='analisis';
  ['utama','pelajar','rekod','analisis','laporan','murajaah','tetapan','penyelaras'].forEach(function(n){var s=document.getElementById('s-'+n);if(s)s.classList.toggle('on',n===name);});
  document.querySelectorAll('.nav-item').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-nav')===(name==='murajaah'?'analisis':name));});
  if(name==='utama')renderHome();
@@ -2084,18 +2141,23 @@ function showLogin(){
  document.getElementById('content').scrollTop=0;
 }
 function enterApp(){
+ document.body.classList.toggle('parent-mode',!!parentMode);
  var nav=document.getElementById('nav'); if(nav)nav.style.display='';
  var lg=document.getElementById('s-login'); if(lg)lg.classList.remove('on');
  if(cloudCfg.role==='penyelaras')navTo('penyelaras'); else navTo('utama');
 }
-function setLoginRole(role){cloudCfg.role=(role==='penyelaras')?'penyelaras':'guru';saveCloudCfg();renderLogin();}
+function setLoginRole(role){cloudCfg.role=(role==='penyelaras'||role==='ibubapa')?role:'guru';saveCloudCfg();renderLogin();}
 function lgErr(msg){var e=document.getElementById('lg-error');if(e)e.textContent=msg||'';}
 function renderLogin(){
  var g=(cloudCfg.role!=='penyelaras');
  document.querySelectorAll('[data-lg-role]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-lg-role')===cloudCfg.role);});
  var gb=document.getElementById('lg-guru-block'),pb=document.getElementById('lg-penyelaras-block');
- if(gb)gb.style.display=g?'':'none';
- if(pb)pb.style.display=g?'none':'';
+ var rl=cloudCfg.role;
+ if(gb)gb.style.display=(rl==='guru')?'':'none';
+ if(pb)pb.style.display=(rl==='penyelaras')?'':'none';
+ var ib=document.getElementById('lg-ibubapa-block');if(ib)ib.style.display=(rl==='ibubapa')?'':'none';
+ var of=document.querySelector('.lg-offline');if(of)of.style.display=(rl==='ibubapa')?'none':'';
+ var pu=document.getElementById('lg-puser');if(pu&&document.activeElement!==pu)pu.value=cloudCfg.parentUser||'';
  var u=document.getElementById('lg-url'); if(u&&document.activeElement!==u)u.value=cloudCfg.url||'';
  var gn=document.getElementById('lg-guru'); if(gn&&document.activeElement!==gn)gn.value=cloudCfg.guruName||'';
  var adv=document.getElementById('lg-adv'); if(adv&&!cloudCfg.url)adv.open=true;
@@ -2112,6 +2174,12 @@ function doLogin(){
  var busy=function(t){if(btn){btn.disabled=true;btn.innerHTML=svg(ICONS.refresh,17)+' '+t;}};
  var done=function(){if(btn){btn.disabled=false;btn.innerHTML=svg(ICONS.cloud,17)+' Log Masuk';}};
  if(!urlOk()){lgErr('Sila isi Pautan sistem yang sah (…/exec).');var a=document.getElementById('lg-adv');if(a)a.open=true;return;}
+ if(cloudCfg.role==='ibubapa'){
+  var pu=document.getElementById('lg-puser').value.trim().toLowerCase(),pp=document.getElementById('lg-ppin').value;
+  if(!pu||!pp){lgErr('Sila isi Kod Ibu Bapa dan kata laluan.');return;}
+  cloudCfg.parentUser=pu;cloudCfg.parentPin=pp;saveCloudCfg();busy('Menyemak…');
+  parentFetch(false).then(done);return;
+ }
  if(cloudCfg.role==='penyelaras'){
   var key=document.getElementById('lg-key').value.trim();
   if(!key){lgErr('Sila isi Kod Penyelaras.');return;}
@@ -2143,12 +2211,40 @@ function doLogin(){
    else lgErr((res&&res.error)?('Gagal: '+res.error):'Gagal log masuk. Cuba lagi.');
   }).catch(function(){done();lgErr('Tiada sambungan ke sistem.');});
 }
+/* -------------------- IBU BAPA (baca sahaja, anak sendiri) -------------------- */
+var parentMode=false, parentChildren=[];
+function sha256Hex(str){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});}
+function parentHash(user,pin){return sha256Hex(String(user).trim().toLowerCase()+':'+pin);}
+function parentFetch(auto){
+ return fetch(cloudCfg.url,{method:'POST',body:JSON.stringify({action:'parentLogin',user:cloudCfg.parentUser,pin:cloudCfg.parentPin})})
+ .then(function(r){return r.json();}).then(function(res){
+  if(res&&res.ok&&Array.isArray(res.children)&&res.children.length){
+   parentChildren=res.children;parentMode=true;cloudCfg.role='ibubapa';cloudCfg.loggedIn=true;saveCloudCfg();
+   appReady=true;parentSetChild(0);enterApp();return;
+  }
+  cloudCfg.loggedIn=false;saveCloudCfg();if(auto)showLogin();
+  lgErr(res&&res.error==='locked'?'Terlalu banyak percubaan. Cuba lagi selepas 15 minit.':'Kod atau kata laluan salah.');
+ }).catch(function(){if(auto)showLogin();lgErr('Tiada sambungan ke sistem.');});
+}
+function parentSetChild(i){
+ var c=parentChildren[i];if(!c)return;
+ state=normalizeState({klass:c.klass,points:c.points,target:c.target,mur:c.mur,annual:c.annual,comments:c.comments,students:[c.student]});
+ analysisMode='individu';analysisStudentId=state.students[0].id;
+ parentBar(i);
+ navTo(document.getElementById('s-laporan').classList.contains('on')?'laporan':'analisis');
+}
+function parentBar(i){
+ var b=document.getElementById('par-bar');if(!b)return;
+ var multi=parentChildren.length>1;
+ var sel=multi?'<select id="par-child" aria-label="Pilih anak">'+parentChildren.map(function(c,k){return '<option value="'+k+'"'+(k===i?' selected':'')+'>'+esc(c.student.name)+'</option>';}).join('')+'</select>':'';
+ b.innerHTML='<div class="pb-t">'+(multi?'Paparan Ibu Bapa':esc(parentChildren[0].student.name)+'<br><span style="opacity:.75;font-weight:600">Paparan ibu bapa</span>')+'</div>'+sel+'<button data-action="logout">Keluar</button>';
+}
 function offlineEnter(){
  cloudCfg.role='guru';cloudCfg.loggedIn=true;cloudCfg.autosync=false;
  if(!cloudCfg.guruName){var n=document.getElementById('lg-guru');cloudCfg.guruName=(n&&n.value.trim())||(state.klass&&state.klass.guru)||'Guru';}
  saveCloudCfg();appReady=true;enterApp();
 }
-function logout(){cloudCfg.loggedIn=false;cloudCfg.pin='';cloudCfg.adminKey='';saveCloudCfg();coordData=[];coordLoadedAt=0;showLogin();}
+function logout(){if(parentMode){cloudCfg.loggedIn=false;cloudCfg.parentPin='';saveCloudCfg();location.reload();return;}cloudCfg.loggedIn=false;cloudCfg.pin='';cloudCfg.adminKey='';saveCloudCfg();coordData=[];coordLoadedAt=0;showLogin();}
 
 function renderCloudUI(){
  var g=(cloudCfg.role!=='penyelaras');
@@ -2177,6 +2273,7 @@ function pushBody(){return JSON.stringify({action:'save',guruId:guruId(),guruNam
 
 /* Muat NAIK: hantar data guru ini ke Sheet (baris sendiri) */
 function cloudPush(silent){
+ if(parentMode)return Promise.resolve(false);
  if(!cloudReady()){if(!silent)toast('Isi Pautan & Nama/Kod Guru dahulu.',false);return Promise.resolve(false);}
  if(cloudBusy)return Promise.resolve(false);
  cloudBusy=true;setSyncBadge('Menyegerak…','busy');
@@ -2224,7 +2321,7 @@ function cloudSyncOnStart(){
   }).catch(function(){setSyncBadge('Luar talian — guna data tempatan','err');appReady=true;});
 }
 function scheduleCloudPush(){
- if(!appReady||cloudCfg.role==='penyelaras'||!cloudCfg.autosync||!cloudReady())return;
+ if(!appReady||parentMode||cloudCfg.role==='penyelaras'||!cloudCfg.autosync||!cloudReady())return;
  if(cloudPushTimer)clearTimeout(cloudPushTimer);
  setSyncBadge('Perubahan belum disegerak…','pending');
  cloudPushTimer=setTimeout(function(){cloudPushTimer=null;cloudPush(true);},2500);
@@ -3528,7 +3625,7 @@ function pdfDownload(){
 
 function repSuffix(){return repMonthly()?(' — '+ymLabel(repPeriod.ym)):'';}
 function reportClass(){showReportPreview(buildClassReport(),(repMonthly()?'Laporan Bulanan Kelas ':'Laporan Kelas ')+(state.klass.name||'')+repSuffix());}
-function reportStudent(id){var s=studentById(id);if(!s){toast('Pelajar tidak dijumpai.',false);return;}cmNudge([id]);showReportPreview(buildStudentReport(s,false),'Laporan '+s.name+repSuffix());}
+function reportStudent(id){var s=studentById(id);if(!s){toast('Pelajar tidak dijumpai.',false);return;}if(!parentMode)cmNudge([id]);showReportPreview(buildStudentReport(s,false),'Laporan '+s.name+repSuffix());}
 function reportAllIndividual(){
  if(!state.students.length){toast('Tiada pelajar.',false);return;}
  cmNudge(state.students.map(function(s){return s.id;}));
@@ -3662,6 +3759,7 @@ document.addEventListener('click',function(e){
 });
 document.addEventListener('change',function(e){
  var el=e.target;
+ if(el&&el.id==='par-child'){parentSetChild(+el.value);return;}
  if(el&&el.id==='ana-picker'){analysisStudentId=el.value;renderAnalisis();return;}
  if(el&&el.id==='coord-guru-pick'){coordSelGuruId=el.value;renderPenyelaras();return;}
  if(el&&el.getAttribute&&el.getAttribute('data-pts')!=null){
@@ -3674,6 +3772,29 @@ document.addEventListener('change',function(e){
 });
 document.getElementById('scanOverlay').addEventListener('click',function(e){if(e.target===this)closeScan();});
 document.getElementById('studentModal').addEventListener('click',function(e){if(e.target===this)closeStudentModal();});
+
+/* ---------------- PASANG SEBAGAI APL (PWA) ---------------- */
+(function(){
+ var dp=null,bar=document.getElementById('installBar'),go=document.getElementById('ib-go'),tx=document.getElementById('ib-text');
+ var KEY='myua_install_dismiss';
+ var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+ var ua=navigator.userAgent||'',ios=/iphone|ipad|ipod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+ function dismissed(){try{var t=+localStorage.getItem(KEY)||0;return Date.now()-t<3*86400000;}catch(e){return false;}}
+ function show(){if(!standalone&&!dismissed()&&bar)bar.classList.add('on');}
+ function hide(){if(bar)bar.classList.remove('on');}
+ if('serviceWorker' in navigator&&location.protocol!=='file:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+ window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;show();});
+ window.addEventListener('appinstalled',function(){dp=null;hide();});
+ if(go)go.addEventListener('click',function(){
+  if(dp){dp.prompt();dp.userChoice.then(function(){dp=null;hide();});}
+  else hide();
+ });
+ var x=document.getElementById('ib-x');if(x)x.addEventListener('click',function(){try{localStorage.setItem(KEY,String(Date.now()));}catch(e){}hide();});
+ if(ios&&!standalone){
+  tx.innerHTML='<b>Pasang MyUA</b>Tekan butang <b style="display:inline;font-size:inherit">Kongsi</b> (⬆︎) di Safari, kemudian <b style="display:inline;font-size:inherit">Tambah ke Skrin Utama</b>.';
+  go.style.display='none';setTimeout(show,1200);
+ }
+})();
 
 /* ---------------- INIT ---------------- */
 function init(){
@@ -3709,7 +3830,9 @@ function init(){
  var lkey=document.getElementById('lg-key');if(lkey)lkey.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();doLogin();}});
  if(!cloudCfg.guruName&&state.klass&&state.klass.guru){cloudCfg.guruName=state.klass.guru;saveCloudCfg();}
  renderCloudUI();
- if(cloudCfg.loggedIn){
+ if(cloudCfg.loggedIn&&cloudCfg.role==='ibubapa'){
+  if(urlOk()&&cloudCfg.parentUser&&cloudCfg.parentPin)parentFetch(true);else showLogin();
+ }else if(cloudCfg.loggedIn){
   appReady=true;enterApp();
   if(cloudCfg.role!=='penyelaras'&&cloudReady())cloudSyncOnStart();
   else if(cloudCfg.role==='penyelaras'&&coordReady())coordLoad();
