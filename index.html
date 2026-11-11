@@ -665,6 +665,12 @@ body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.par
 #installBar .ib-go{background:linear-gradient(135deg,var(--g-mid),var(--g-dark));color:#fff;font-weight:800;font-size:13px;border-radius:12px;padding:10px 14px;flex:none}
 #installBar .ib-x{font-size:20px;line-height:1;color:var(--ink-3);padding:4px 6px;flex:none}
 @media print{#installBar{display:none!important}}
+.actf-row{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.actf-row::-webkit-scrollbar{display:none}
+.actf{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;background:var(--card);border:1.5px solid var(--line);font-size:12.5px;font-weight:800;color:var(--ink-2);transition:all .2s}
+.actf small{font-size:10.5px;font-weight:900;background:#f3e9ec;border-radius:999px;padding:1px 7px;color:var(--ink-2)}
+.actf.on{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:var(--sh-sm)}
+.actf.on small{background:rgba(255,255,255,.25);color:#fff}
 </style>
 </head>
 <body>
@@ -1449,6 +1455,7 @@ function phaseCardHTML(key,idx){
 }
 
 /* ---------------- RENDER: UTAMA (Dashboard Kelas) ---------------- */
+var homeActFilter='semua';
 function renderHome(){
  var K=state.klass, cs=classStats();
  var ranked=rankedStudents();
@@ -1475,7 +1482,13 @@ function renderHome(){
   +'</button>';
  }).join('') || '<div class="empty"><div class="e-ic">'+svg(ICONS.users,32)+'</div><div class="e-t">Belum ada pelajar</div><div class="e-s">Tambah pelajar di Tetapan untuk mula.</div></div>';
 
- var recents=sortRecs(allRecs).slice(0,4).map(function(r){
+ var sortedAll=sortRecs(allRecs);
+ var actChips=['semua'].concat(PHASE_ORDER).map(function(k){
+  var n=k==='semua'?sortedAll.length:sortedAll.filter(function(r){return r.phase===k;}).length;
+  return '<button class="actf'+(homeActFilter===k?' on':'')+'" data-actf="'+k+'" style="--ac:'+(k==='semua'?'var(--g)':PC[k])+'">'+(k==='semua'?'Semua':PHASES[k].short)+' <small>'+n+'</small></button>';
+ }).join('');
+ var actEmptyT=homeActFilter==='semua'?'Belum ada rekod':'Belum ada rekod '+PHASES[homeActFilter].label;
+ var recents=sortedAll.filter(function(r){return homeActFilter==='semua'||r.phase===homeActFilter;}).slice(0,5).map(function(r){
   var owner=state.students.filter(function(s){return s.records.indexOf(r)>=0;})[0];
   var name=owner?owner.name:'';
   var P=PHASES[r.phase],ac=PC[r.phase];
@@ -1486,7 +1499,7 @@ function renderHome(){
      +'<div class="rec-dt">'+svg(ICONS.calendar,11)+' '+fmtDate(r.ts)+' &nbsp; '+svg(ICONS.clock,11)+' '+fmtTime(r.ts)+'</div></div>'
    +'<div class="rec-r"><span class="rec-pts">+'+recPoints(r)+'</span></div>'
   +'</div>';
- }).join('') || '<div class="empty"><div class="e-ic">'+svg(ICONS.page,32)+'</div><div class="e-t">Belum ada rekod</div><div class="e-s">Pilih pelajar dan mula merekod.</div></div>';
+ }).join('') || '<div class="empty"><div class="e-ic">'+svg(ICONS.page,32)+'</div><div class="e-t">'+actEmptyT+'</div><div class="e-s">Pilih pelajar dan mula merekod.</div></div>';
 
  document.getElementById('s-utama').innerHTML=''
   +'<div class="hero">'
@@ -1512,7 +1525,7 @@ function renderHome(){
     +'</div>'
     +mjHomeBanner()
     +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="medal"></span> Pelajar Terbaik</div><button class="link" data-nav="analisis">Ranking Penuh '+svg(ICONS.chev,13)+'</button></div>'+topHTML+'</div>'
-    +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="clock"></span> Aktiviti Terkini</div></div>'+recents+'</div>'
+    +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="clock"></span> Aktiviti Terkini</div></div><div class="actf-row">'+actChips+'</div>'+recents+'</div>'
   +'</div>';
  paintIcons(document.getElementById('s-utama'));
 }
@@ -3699,8 +3712,9 @@ function onScanResult(raw){
 
 /* ---------------- PENGENDALI ACARA ---------------- */
 document.addEventListener('click',function(e){
- var el=e.target.closest('[data-nav],[data-seg],[data-tab],[data-action],[data-phase],[data-phase-chip],[data-open-student],[data-amode],[data-report-student],[data-lg-role],[data-cmode],[data-att-status]');
+ var el=e.target.closest('[data-nav],[data-seg],[data-tab],[data-action],[data-phase],[data-phase-chip],[data-open-student],[data-amode],[data-report-student],[data-lg-role],[data-cmode],[data-att-status],[data-actf]');
  if(!el)return;
+ if(el.hasAttribute('data-actf')){var sc=document.getElementById('content'),st=sc?sc.scrollTop:0;homeActFilter=el.getAttribute('data-actf');renderHome();if(sc)sc.scrollTop=st;return;}
  if(el.hasAttribute('data-nav')){navTo(el.getAttribute('data-nav'));return;}
  if(el.hasAttribute('data-att-status')){setAttStatus(el.getAttribute('data-att-status'));return;}
  if(el.hasAttribute('data-lg-role')){setLoginRole(el.getAttribute('data-lg-role'));return;}
@@ -3786,10 +3800,35 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;show();});
  window.addEventListener('appinstalled',function(){dp=null;hide();});
  if(go)go.addEventListener('click',function(){
+  if(go.getAttribute('data-copy')){try{navigator.clipboard.writeText(location.href);go.textContent='Disalin ✓';}catch(e){}return;}
   if(dp){dp.prompt();dp.userChoice.then(function(){dp=null;hide();});}
   else hide();
  });
  var x=document.getElementById('ib-x');if(x)x.addEventListener('click',function(){try{localStorage.setItem(KEY,String(Date.now()));}catch(e){}hide();});
+ if(/pwadebug/.test(location.search)){
+  var box=document.createElement('pre'),L=[];
+  box.style.cssText='position:fixed;top:0;left:0;right:0;z-index:10000;background:#111;color:#7CFC00;font:11px/1.4 monospace;padding:8px;margin:0;white-space:pre-wrap;max-height:55vh;overflow:auto';
+  document.body.appendChild(box);
+  var log=function(t){L.push(t);box.textContent='DIAGNOSTIK PASANG APL\n'+L.join('\n');};
+  log('HTTPS: '+(location.protocol==='https:')+' | Standalone: '+standalone+' | iOS: '+ios);
+  log('Pelayar: '+ua.slice(0,100));
+  var mf=document.querySelector('link[rel=manifest]');log('Pautan manifest: '+(mf?mf.href:'TIADA'));
+  if(mf)fetch(mf.href).then(function(r){log('manifest.json: HTTP '+r.status);return r.json();}).then(function(j){log('start_url='+j.start_url+' | ikon='+(j.icons||[]).length);return fetch(new URL(j.start_url,mf.href)).then(function(r){log('start_url dibuka: HTTP '+r.status);});}).catch(function(e){log('manifest RALAT: '+e);});
+  ['sw.js','icon-192.png','icon-512.png'].forEach(function(f){fetch(f).then(function(r){log(f+': HTTP '+r.status);}).catch(function(){log(f+': RALAT');});});
+  if(navigator.serviceWorker)navigator.serviceWorker.getRegistrations().then(function(rs){log('Service worker berdaftar: '+rs.length);});else log('Service worker: tidak disokong');
+  window.addEventListener('beforeinstallprompt',function(){log('beforeinstallprompt: DITERIMA');});
+  setTimeout(function(){log('beforeinstallprompt selepas 5s: '+(dp?'ADA':'TIADA'));},5000);
+ }
+ if(!ios&&!standalone){
+  var inApp=/FBAN|FBAV|Instagram|Line\/|MicroMessenger|Telegram|; wv\)|GSA\//i.test(ua),android=/android/i.test(ua);
+  setTimeout(function(){
+   if(dp||dismissed()||bar.classList.contains('on'))return;   // prompt asal sudah/sedang tunjuk
+   if(inApp){tx.innerHTML='<b>Buka dalam Chrome dahulu</b>Pautan ini dibuka dalam pelayar WhatsApp/Telegram, jadi tak boleh dipasang. Tekan <b style="display:inline;font-size:inherit">⋮</b> → <b style="display:inline;font-size:inherit">Buka dalam pelayar</b>.';go.textContent='Salin pautan';go.setAttribute('data-copy','1');}
+   else if(android){tx.innerHTML='<b>Pasang MyUA</b>Tekan menu <b style="display:inline;font-size:inherit">⋮</b> Chrome, kemudian <b style="display:inline;font-size:inherit">Pasang aplikasi</b> / <b style="display:inline;font-size:inherit">Tambah ke skrin utama</b>.';go.style.display='none';}
+   else return;
+   show();
+  },2500);
+ }
  if(ios&&!standalone){
   tx.innerHTML='<b>Pasang MyUA</b>Tekan butang <b style="display:inline;font-size:inherit">Kongsi</b> (⬆︎) di Safari, kemudian <b style="display:inline;font-size:inherit">Tambah ke Skrin Utama</b>.';
   go.style.display='none';setTimeout(show,1200);
