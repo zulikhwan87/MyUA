@@ -718,6 +718,8 @@ html[data-dk] .hq-pill.ph,html[data-dk] .hq-phl{filter:brightness(1.75)}
 .hq-pg em{flex:1;min-width:0;font-style:normal;font-size:12px;font-weight:700;color:var(--ink-3);line-height:1.3}
 .hq-grades{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}
 .hq-grades .mj-gb{padding:12px 4px;font-size:13.5px}
+.hq-att{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:4px}
+.hq-att .mj-gb{padding:12px 4px;font-size:13.5px}
 .hq-alt{display:flex;gap:7px;margin-top:8px}.hq-alt .btn{flex:1}
 /* ---- Murajaah di rumah ---- */
 .rh-card .rh-date{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)}
@@ -1667,14 +1669,14 @@ function renderHome(){
   +'</div>'
   +'<div class="pad">'
     +'<div class="kpi-grid">'+kpi+'</div>'
-    +'<button class="hq-entry" data-nav="halaqah"><span class="hq-ei">'+svg(ICONS.flash,20)+'</span><span class="hq-et"><b>Mod Halaqah</b><small>Rekod pantas ikut tingkatan — satu tekan setiap pelajar</small></span>'+svg(ICONS.chev,16)+'</button>'
-    +'<div class="act-bar" style="margin-top:12px">'
+    +'<div class="act-bar" style="margin-top:14px">'
       +'<button class="btn btn-primary sm" data-nav="pelajar">'+svg(ICONS.users,16)+' Senarai Pelajar</button>'
       +'<button class="btn btn-gold sm" data-nav="laporan">'+svg(ICONS.report,16)+' Laporan PDF</button>'
     +'</div>'
     +mjHomeBanner()
     +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="medal"></span> Pelajar Terbaik</div><button class="link" data-nav="analisis">Ranking Penuh '+svg(ICONS.chev,13)+'</button></div>'+topHTML+'</div>'
     +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="clock"></span> Aktiviti Terkini</div></div><div class="actf-row">'+actChips+'</div>'+recents+'</div>'
+    +'<button class="hq-entry" style="margin-bottom:6px" data-nav="halaqah"><span class="hq-ei">'+svg(ICONS.flash,20)+'</span><span class="hq-et"><b>Mod Halaqah</b><small>Rekod pantas ikut tingkatan — satu tekan setiap pelajar</small></span>'+svg(ICONS.chev,16)+'</button>'
   +'</div>';
  paintIcons(document.getElementById('s-utama'));
 }
@@ -3951,7 +3953,7 @@ document.addEventListener('click',function(e){
   case 'hq-open':hqToggle(el.getAttribute('data-id'));break;
   case 'hq-phase':hqSetPhase(el.getAttribute('data-id'),el.getAttribute('data-ph'));break;
   case 'hq-grade':hqSave(el.getAttribute('data-id'),el.getAttribute('data-grade')||'');break;
-  case 'hq-absent':hqAbsent(el.getAttribute('data-id'));break;
+  case 'hq-att':hqAtt(el.getAttribute('data-id'),el.getAttribute('data-st'));break;
   case 'hq-skip':hqSkip(el.getAttribute('data-id'));break;
   case 'hq-undo':hqUndo(el.getAttribute('data-id'));break;
   case 'rh-tick':rhTick(+el.getAttribute('data-i'));break;
@@ -4072,7 +4074,12 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
 
 /* ---------------- MOD HALAQAH (rekod pantas ikut tingkatan) ---------------- */
 var hqTk=null,hqOpen=null,hqPh={},hqPg={},hqDone={};   // hqDone[sid]={kind:'rec'|'att'|'skip',id,text}
-var HQ_PHASES=['tasmik','murajaah','hafazan','talaqqi','tahriri'];
+var HQ_PHASES=PHASE_ORDER.concat([ATT_KEY]);   // talaqqi, tasmik, murajaah, tahriri, kehadiran
+function hqLbl(ph){return ph===ATT_KEY?'Kehadiran':PHASES[ph].short;}
+function hqCol(ph){return ph===ATT_KEY?ATT_COLOR:PC[ph];}
+function hqLearned(s){ // bacaan terakhir yang sudah dipelajari (Talaqqi / Hafazan lama) — calon Tasmik
+ var A=hqLast(s,'talaqqi'),B=hqLast(s,'hafazan');if(!A)return B;if(!B)return A;return ((B.end|0)>(A.end|0))?B:A;
+}
 function hqTkOf(s){var t=parseInt(s.tingkatan,10);return (t>=1&&t<=5)?String(t):'0';}
 function hqTkLabel(k){return k==='0'?'Belum ditetapkan':('Tingkatan '+k);}
 function hqGroups(){
@@ -4086,33 +4093,38 @@ function hqAfter(L,why){ // muka surat seterusnya selepas rekod L, saiz sama (1�
  return {a:a,b:Math.min(TOTAL_PAGES,a+n-1),why:why};
 }
 function hqSuggest(s,ph,an){
- var T=hqLast(s,'tasmik'),H=hqLast(s,'hafazan');
+ var T=hqLast(s,'tasmik'),Lr=hqLearned(s);
+ if(ph===ATT_KEY)return {a:null,why:'Pilih status kehadiran'};
  if(ph==='murajaah'){
   var c=an.chunks[0];
   if(c)return {a:c.a,b:Math.min(c.b,c.a+4),why:'Tertunggak · ingatan '+Math.round(c.minR*100)+'%'};
   return {a:null,why:'Tiada yang tertunggak — isi muka surat'};
  }
  if(ph==='tasmik'){
-  if(H&&(!T||H.end>T.end)){var a=Math.max(T?T.end+1:1,H.start|0),b=Math.min(H.end|0,a+4);return {a:a,b:b,why:'Hafazan '+mjRange(a,H.end|0)+' belum ditasmik'};}
+  if(Lr&&(!T||Lr.end>T.end)){var a=Math.max(T?T.end+1:1,Lr.start|0),b=Math.min(Lr.end|0,a+4);return {a:a,b:b,why:'Talaqqi '+mjRange(a,Lr.end|0)+' belum ditasmik'};}
   return hqAfter(T,'Selepas '+(T?mjRange(T.start,T.end):'')+' (terakhir)')||{a:null,why:'Belum ada rekod — isi muka surat'};
  }
- if(ph==='hafazan')return hqAfter(H,'Selepas '+(H?mjRange(H.start,H.end):'')+' (terakhir)')||hqAfter(T,'Baharu selepas Tasmik M/S '+(T?T.end:''))||{a:null,why:'Belum ada rekod — isi muka surat'};
+ if(ph==='talaqqi'){
+  var Tq=hqLast(s,'talaqqi');
+  if(Tq&&T&&(T.end|0)>(Tq.end|0))Tq=null;   // Tasmik sudah melepasi Talaqqi terakhir → sambung selepas Tasmik
+  return hqAfter(Tq,'Selepas '+(Tq?mjRange(Tq.start,Tq.end):'')+' (terakhir)')||hqAfter(T,'Baharu selepas Tasmik M/S '+(T?T.end:''))||{a:null,why:'Belum ada rekod — isi muka surat'};
+ }
  var L=hqLast(s,ph);
- return hqAfter(L,'Selepas '+(L?mjRange(L.start,L.end):'')+' (terakhir)')||(ph==='talaqqi'?hqAfter(H,'Selepas Hafazan M/S '+(H?H.end:'')):null)||{a:null,why:'Belum ada rekod — isi muka surat'};
+ return hqAfter(L,'Selepas '+(L?mjRange(L.start,L.end):'')+' (terakhir)')||{a:null,why:'Belum ada rekod — isi muka surat'};
 }
 function hqDefaultPhase(s,an){
- var T=hqLast(s,'tasmik'),H=hqLast(s,'hafazan');
+ var T=hqLast(s,'tasmik'),Lr=hqLearned(s);
  if(an.chunks.length&&an.chunks[0].minR<0.5)return 'murajaah';
- if(H&&(!T||H.end>T.end))return 'tasmik';
+ if(Lr&&(!T||Lr.end>T.end))return 'tasmik';
  if(an.chunks.length)return 'murajaah';
- return (s.records||[]).length?'hafazan':'talaqqi';
+ return 'talaqqi';
 }
 function hqToday(s){ // rekod / kehadiran hari ini (dari data sebenar)
  var r=null;(s.records||[]).forEach(function(x){if(isToday(x.ts)&&(!r||x.ts>r.ts))r=x;});
- var a=(s.attendance||[]).filter(function(x){return x.date===todayKey()&&x.status==='tidak';})[0]||null;
+ var a=(s.attendance||[]).filter(function(x){return x.date===todayKey();}).pop()||null;
  return {r:r,a:a};
 }
-function hqRecText(r){return PHASES[r.phase].short+' '+mjRange(r.start,r.end)+(r.grade&&GRADES[r.grade]?' · '+GRADES[r.grade].label:'');}
+function hqRecText(r){return (PHASES[r.phase]?PHASES[r.phase].short:r.phase)+' '+mjRange(r.start,r.end)+(r.grade&&GRADES[r.grade]?' · '+GRADES[r.grade].label:'');}
 function hqParentNote(s){
  var L=rumahOf(s),y=dayKey(Date.now()-86400000);
  for(var i=L.length-1;i>=0;i--){if(L[i].d<y)break;if(L[i].note)return L[i].note;}
@@ -4122,7 +4134,7 @@ function hqDoneOf(s){ // sesi ini, atau rekod/kehadiran sebenar hari ini (kekal 
  if(hqDone[s.id])return hqDone[s.id];
  var T=hqToday(s);
  if(T.r)return {kind:'data',text:hqRecText(T.r)};
- if(T.a)return {kind:'dataatt',text:'Tidak hadir'};
+ if(T.a)return {kind:'dataatt',text:(ATT_STATUS[T.a.status]||ATT_STATUS.hadir).label};
  return null;
 }
 function hqIsDone(s){var D=hqDoneOf(s);return !!(D&&D.kind!=='skip')||!!hqDone[s.id];}
@@ -4152,8 +4164,8 @@ function renderHalaqah(){
    sub=D.kind==='skip'?'Dilangkau · tekan untuk buka semula':D.kind.indexOf('data')===0?'Sudah direkod hari ini · tekan untuk tambah':'Disimpan · <button class="hq-undo" data-action="hq-undo" data-id="'+s.id+'">Batal</button>';
   }else{
    an=mjAnalyse(s,now,cfg);ph=hqPh[s.id]||hqDefaultPhase(s,an);sg=hqSuggest(s,ph,an);
-   right='<span class="hq-pill ph" style="background:'+tint(PC[ph],'22')+';color:'+PC[ph]+'">'+(sg.a?mjRange(sg.a,sg.b):'M/S ?')+'</span>';
-   sub=T.a?'<span style="color:var(--danger)">Tidak hadir (direkod)</span>':T.r?('Hari ini: '+esc(hqRecText(T.r))):('<b class="hq-phl" style="color:'+PC[ph]+';font-weight:900">'+PHASES[ph].short+'</b> · '+esc(sg.why));
+   right='<span class="hq-pill ph" style="background:'+tint(hqCol(ph),'22')+';color:'+hqCol(ph)+'">'+(ph===ATT_KEY?'Kehadiran':sg.a?mjRange(sg.a,sg.b):'M/S ?')+'</span>';
+   sub=T.a?'<span style="color:'+(ATT_STATUS[T.a.status]||ATT_STATUS.hadir).color+'">'+(ATT_STATUS[T.a.status]||ATT_STATUS.hadir).label+' (direkod)</span>':T.r?('Hari ini: '+esc(hqRecText(T.r))):('<b class="hq-phl" style="color:'+hqCol(ph)+';font-weight:900">'+hqLbl(ph)+'</b> · '+esc(sg.why));
   }
   var h='<div class="hq-row'+(D&&D.kind!=='skip'?' done':'')+(open?' open':'')+'">'
    +(D&&(D.kind==='rec'||D.kind==='att')?'<div class="hq-top">':'<button class="hq-top" data-action="hq-open" data-id="'+s.id+'" aria-expanded="'+open+'">')
@@ -4166,12 +4178,14 @@ function renderHalaqah(){
     +'<div class="hq-why">'+svg(ICONS.target,14)+' '+esc(sg.why)+'</div>'
     +(pn?'<div class="hq-why par">'+svg(ICONS.home,14)+' Ibu bapa: “'+esc(pn)+'”</div>':'')
     +(T.r?'<div class="hq-why">'+svg(ICONS.check,14)+' Sudah direkod hari ini: '+esc(hqRecText(T.r))+'</div>':'')
-    +'<div class="hq-phs">'+HQ_PHASES.map(function(k){return '<button class="hq-ph'+(k===ph?' on':'')+'" style="--ac:'+PC[k]+'" data-action="hq-phase" data-id="'+s.id+'" data-ph="'+k+'">'+PHASES[k].short+'</button>';}).join('')+'</div>'
-    +'<label class="hq-pg"><span>M/S</span><input class="input" id="hq-page" inputmode="numeric" value="'+esc(pv)+'" placeholder="cth: 12 atau 12-14" data-id="'+s.id+'" aria-label="Muka surat"><em id="hq-auto">'+esc(pv?hqAutoTxt(pv):'')+'</em></label>'
-    +(GRADED[ph]
-      ?'<div class="hq-grades">'+GRADE_ORDER.map(function(g){return '<button class="mj-gb" style="--gc:'+GRADES[g].color+'" data-action="hq-grade" data-id="'+s.id+'" data-grade="'+g+'">'+GRADES[g].label+'</button>';}).join('')+'</div>'
-      :'<button class="btn btn-primary btn-block" data-action="hq-grade" data-id="'+s.id+'" style="margin-top:10px">'+svg(ICONS.check,16)+' Simpan '+PHASES[ph].label+'</button>')
-    +'<div class="hq-alt"><button class="btn btn-line sm" data-action="hq-absent" data-id="'+s.id+'">Tidak hadir</button><button class="btn btn-line sm" data-action="hq-skip" data-id="'+s.id+'">Langkau</button></div>'
+    +'<div class="hq-phs">'+HQ_PHASES.map(function(k){return '<button class="hq-ph'+(k===ph?' on':'')+'" style="--ac:'+hqCol(k)+'" data-action="hq-phase" data-id="'+s.id+'" data-ph="'+k+'">'+hqLbl(k)+'</button>';}).join('')+'</div>'
+    +(ph===ATT_KEY
+      ?'<div class="hq-att">'+ATT_ORDER.map(function(k){var A=ATT_STATUS[k];return '<button class="mj-gb" style="--gc:'+A.color+'" data-action="hq-att" data-id="'+s.id+'" data-st="'+k+'">'+A.label+'</button>';}).join('')+'</div>'
+      :'<label class="hq-pg"><span>M/S</span><input class="input" id="hq-page" inputmode="numeric" value="'+esc(pv)+'" placeholder="cth: 12 atau 12-14" data-id="'+s.id+'" aria-label="Muka surat"><em id="hq-auto">'+esc(pv?hqAutoTxt(pv):'')+'</em></label>'
+       +(GRADED[ph]
+        ?'<div class="hq-grades">'+GRADE_ORDER.map(function(g){return '<button class="mj-gb" style="--gc:'+GRADES[g].color+'" data-action="hq-grade" data-id="'+s.id+'" data-grade="'+g+'">'+GRADES[g].label+'</button>';}).join('')+'</div>'
+        :'<button class="btn btn-primary btn-block" data-action="hq-grade" data-id="'+s.id+'" style="margin-top:10px">'+svg(ICONS.check,16)+' Simpan '+PHASES[ph].label+'</button>'))
+    +'<div class="hq-alt"><button class="btn btn-line sm" data-action="hq-skip" data-id="'+s.id+'">Langkau</button></div>'
     +'</div>';
   }
   return h+'</div>';
@@ -4209,12 +4223,12 @@ function hqSave(id,grade){
  popPoints(pointsFor(ph));
  hqNext(id);
 }
-function hqAbsent(id){
- var s=studentById(id);if(!s)return;
+function hqAtt(id,st){
+ var s=studentById(id);if(!s||!ATT_STATUS[st])return;
  s.attendance=s.attendance||[];
- var a={id:uid(),status:'tidak',date:todayKey(),note:'',ts:Date.now()};
+ var a={id:uid(),status:st,date:todayKey(),note:'',ts:Date.now()};
  s.attendance.push(a);saveState();
- hqDone[id]={kind:'att',id:a.id,text:'Tidak hadir'};
+ hqDone[id]={kind:'att',id:a.id,text:ATT_STATUS[st].label};delete hqPh[id];
  hqNext(id);
 }
 function hqSkip(id){hqDone[id]={kind:'skip',text:'Dilangkau'};hqNext(id);}
