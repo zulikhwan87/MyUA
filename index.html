@@ -4077,8 +4077,9 @@ var hqTk=null,hqOpen=null,hqPh={},hqPg={},hqDone={};   // hqDone[sid]={kind:'rec
 var HQ_PHASES=PHASE_ORDER.concat([ATT_KEY]);   // talaqqi, tasmik, murajaah, tahriri, kehadiran
 function hqLbl(ph){return ph===ATT_KEY?'Kehadiran':PHASES[ph].short;}
 function hqCol(ph){return ph===ATT_KEY?ATT_COLOR:PC[ph];}
-function hqLearned(s){ // bacaan terakhir yang sudah dipelajari (Talaqqi / Hafazan lama) — calon Tasmik
- var A=hqLast(s,'talaqqi'),B=hqLast(s,'hafazan');if(!A)return B;if(!B)return A;return ((B.end|0)>(A.end|0))?B:A;
+function hqLearned(s){ // Talaqqi terakhir — calon Tasmik (Tasmik = rekod hafalan BAHARU).
+ // Rekod Hafazan lama TIDAK dikira di sini; ia hafalan lama yang dijaga melalui Murajaah (lihat mjBuild).
+ return hqLast(s,'talaqqi');
 }
 function hqTkOf(s){var t=parseInt(s.tingkatan,10);return (t>=1&&t<=5)?String(t):'0';}
 function hqTkLabel(k){return k==='0'?'Belum ditetapkan':('Tingkatan '+k);}
