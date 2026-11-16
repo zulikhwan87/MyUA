@@ -673,6 +673,52 @@ body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.par
 .actf.on{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:var(--sh-sm)}
 .actf.on small{background:rgba(255,255,255,.25);color:#fff}
 
+/* ---- Mod Halaqah ---- */
+.hq-entry{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:14px;padding:13px 14px;border-radius:var(--r-lg);background:var(--card);border:1.5px solid var(--line-2);box-shadow:var(--sh-sm);color:var(--ink)}
+.hq-entry .hq-ei{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff;background:linear-gradient(135deg,var(--g-mid),var(--g-dark))}
+.hq-entry .hq-et{flex:1;min-width:0;display:flex;flex-direction:column}
+.hq-entry b{font-size:15px;font-weight:900;color:var(--g-ink)}
+.hq-entry small{font-size:12px;color:var(--ink-2);font-weight:600}
+.hq-entry>svg{color:var(--ink-3);flex:none}
+.hq-head{display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px}
+.hq-sub{font-size:12px;opacity:.8;font-weight:700}
+.hq-ttl{font-size:19px;font-weight:900}
+.hq-cnt{text-align:right}.hq-cnt b{display:block;font-size:22px;font-weight:900;line-height:1}.hq-cnt small{font-size:11px;opacity:.8}
+.hq-bar{height:6px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:10px}
+.hq-bar>div{height:100%;background:var(--lime-2);border-radius:99px;transition:width .4s cubic-bezier(.2,.8,.2,1)}
+.hq-tabs{display:flex;gap:7px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.hq-tabs::-webkit-scrollbar{display:none}
+.hq-tab{flex:none;padding:8px 13px;border-radius:999px;background:var(--card);border:1.5px solid var(--line);font-size:12.5px;font-weight:800;color:var(--ink-2);white-space:nowrap}
+.hq-tab small{font-size:11.5px;font-weight:900;opacity:.75;margin-left:2px}
+.hq-tab.on{background:var(--g);border-color:var(--g);color:#fff}
+.hq-list{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.hq-row{border-top:1px solid var(--line)}.hq-row:first-child{border-top:none}
+.hq-row.open{background:var(--g-soft)}
+.hq-row.done .hq-top{opacity:.7}
+.hq-top{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 12px}
+.hq-top .st-av{width:36px;height:36px;border-radius:11px;flex:none;display:grid;place-items:center;font-size:13px;font-weight:900;color:#fff}
+.hq-mid{flex:1;min-width:0;display:flex;flex-direction:column}
+.hq-mid b{font-size:14px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hq-mid small{font-size:12px;color:var(--ink-2);font-weight:600;margin-top:2px;line-height:1.35}
+.hq-pill{font-size:11.5px;font-weight:900;padding:3px 9px;border-radius:99px;background:var(--track);color:var(--ink-2);white-space:nowrap;flex:none;max-width:46%;overflow:hidden;text-overflow:ellipsis}
+.hq-pill.ok{background:#e7f5ee;color:#0b6b3a}.hq-pill.abs{background:var(--danger-soft);color:#b42328}.hq-pill.skip{background:var(--track);color:var(--ink-3)}
+html[data-dk] .hq-pill.ok{background:#14301f;color:#8fe0b0}html[data-dk] .hq-pill.abs{color:#ffb4b6}
+html[data-dk] .hq-pill.ph,html[data-dk] .hq-phl{filter:brightness(1.75)}
+.hq-undo{font-size:12px;font-weight:900;color:var(--g-ink);text-decoration:underline;padding:0 2px}
+.hq-panel{padding:0 12px 13px}
+.hq-why{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-2);line-height:1.4;margin-bottom:5px}
+.hq-why svg{flex:none;margin-top:1px}
+.hq-why.par{color:var(--g-ink)}
+.hq-phs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px}
+.hq-ph{padding:7px 12px;border-radius:99px;font-size:12.5px;font-weight:900;border:1.5px solid var(--line-2);background:var(--card);color:var(--ink-2)}
+.hq-ph.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.hq-pg{display:flex;align-items:center;gap:9px}
+.hq-pg span{font-size:13px;font-weight:900;color:var(--ink-2)}
+.hq-pg .input{width:120px;padding:10px 12px;font-size:16px;font-weight:800;background:var(--card)}
+.hq-pg em{flex:1;min-width:0;font-style:normal;font-size:12px;font-weight:700;color:var(--ink-3);line-height:1.3}
+.hq-grades{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:11px}
+.hq-grades .mj-gb{padding:12px 4px;font-size:13.5px}
+.hq-alt{display:flex;gap:7px;margin-top:8px}.hq-alt .btn{flex:1}
 /* ---- Murajaah di rumah ---- */
 .rh-card .rh-date{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)}
 .rh-sub{font-size:12.5px;color:var(--ink-2);line-height:1.5;margin:-2px 0 10px}
@@ -944,6 +990,7 @@ html[data-dk] .ring{background:conic-gradient(var(--chart) calc(var(--p)*1%), va
 
     <!-- ============ PAPAN PENYELARAS ============ -->
     <section class="screen" id="s-penyelaras"></section>
+    <section class="screen" id="s-halaqah"></section>
 
     <!-- ============ TETAPAN ============ -->
     <section class="screen" id="s-tetapan">
@@ -1620,7 +1667,8 @@ function renderHome(){
   +'</div>'
   +'<div class="pad">'
     +'<div class="kpi-grid">'+kpi+'</div>'
-    +'<div class="act-bar" style="margin-top:14px">'
+    +'<button class="hq-entry" data-nav="halaqah"><span class="hq-ei">'+svg(ICONS.flash,20)+'</span><span class="hq-et"><b>Mod Halaqah</b><small>Rekod pantas ikut tingkatan — satu tekan setiap pelajar</small></span>'+svg(ICONS.chev,16)+'</button>'
+    +'<div class="act-bar" style="margin-top:12px">'
       +'<button class="btn btn-primary sm" data-nav="pelajar">'+svg(ICONS.users,16)+' Senarai Pelajar</button>'
       +'<button class="btn btn-gold sm" data-nav="laporan">'+svg(ICONS.report,16)+' Laporan PDF</button>'
     +'</div>'
@@ -2089,7 +2137,7 @@ function delStudent(id){
 function renderAll(){renderHome();renderRekodHeader();renderList();refreshFasaSave();}
 function navTo(name){
  if(parentMode&&name!=='laporan')name='analisis';
- ['utama','pelajar','rekod','analisis','laporan','murajaah','tetapan','penyelaras'].forEach(function(n){var s=document.getElementById('s-'+n);if(s)s.classList.toggle('on',n===name);});
+ ['utama','pelajar','rekod','analisis','laporan','murajaah','tetapan','penyelaras','halaqah'].forEach(function(n){var s=document.getElementById('s-'+n);if(s)s.classList.toggle('on',n===name);});
  document.querySelectorAll('.nav-item').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-nav')===(name==='murajaah'?'analisis':name));});
  if(name==='utama')renderHome();
  else if(name==='pelajar')renderStudents();
@@ -2097,6 +2145,7 @@ function navTo(name){
  else if(name==='laporan')renderLaporan();
  else if(name==='murajaah')renderMurajaah();
  else if(name==='tetapan')renderTetapan();
+ else if(name==='halaqah')renderHalaqah();
  else if(name==='penyelaras'){renderPenyelaras();if(coordReady()&&!coordData.length)coordLoad();}
  else if(name==='rekod'){renderRekodHeader();if(document.getElementById('view-saya').classList.contains('on'))renderList();}
  document.getElementById('content').scrollTop=0;
@@ -3898,6 +3947,13 @@ document.addEventListener('click',function(e){
   case 'rep-mode':setRepMode(el.getAttribute('data-mode'));break;
   case 'rep-prev':stepRepMonth(-1);break;
   case 'rep-next':stepRepMonth(1);break;
+  case 'hq-tab':hqTk=el.getAttribute('data-tk');hqOpen=null;renderHalaqah();break;
+  case 'hq-open':hqToggle(el.getAttribute('data-id'));break;
+  case 'hq-phase':hqSetPhase(el.getAttribute('data-id'),el.getAttribute('data-ph'));break;
+  case 'hq-grade':hqSave(el.getAttribute('data-id'),el.getAttribute('data-grade')||'');break;
+  case 'hq-absent':hqAbsent(el.getAttribute('data-id'));break;
+  case 'hq-skip':hqSkip(el.getAttribute('data-id'));break;
+  case 'hq-undo':hqUndo(el.getAttribute('data-id'));break;
   case 'rh-tick':rhTick(+el.getAttribute('data-i'));break;
   case 'rh-rate':rhRate(el.getAttribute('data-r'));break;
   case 'rh-send':rhSend();break;
@@ -4013,6 +4069,161 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
   setTimeout(show,1200);
  }
 })();
+
+/* ---------------- MOD HALAQAH (rekod pantas ikut tingkatan) ---------------- */
+var hqTk=null,hqOpen=null,hqPh={},hqPg={},hqDone={};   // hqDone[sid]={kind:'rec'|'att'|'skip',id,text}
+var HQ_PHASES=['tasmik','murajaah','hafazan','talaqqi','tahriri'];
+function hqTkOf(s){var t=parseInt(s.tingkatan,10);return (t>=1&&t<=5)?String(t):'0';}
+function hqTkLabel(k){return k==='0'?'Belum ditetapkan':('Tingkatan '+k);}
+function hqGroups(){
+ var g={};state.students.forEach(function(s){var k=hqTkOf(s);(g[k]=g[k]||[]).push(s);});
+ Object.keys(g).forEach(function(k){g[k].sort(function(a,b){return (a.no||0)-(b.no||0)||String(a.name).localeCompare(String(b.name));});});
+ return g;
+}
+function hqLast(s,ph){var b=null;(s.records||[]).forEach(function(r){if(r&&r.phase===ph&&(!b||r.ts>b.ts))b=r;});return b;}
+function hqAfter(L,why){ // muka surat seterusnya selepas rekod L, saiz sama (1–5 m/s)
+ if(!L)return null;var n=Math.min(5,Math.max(1,(L.end|0)-(L.start|0)+1)),a=(L.end|0)+1;if(a>TOTAL_PAGES)return null;
+ return {a:a,b:Math.min(TOTAL_PAGES,a+n-1),why:why};
+}
+function hqSuggest(s,ph,an){
+ var T=hqLast(s,'tasmik'),H=hqLast(s,'hafazan');
+ if(ph==='murajaah'){
+  var c=an.chunks[0];
+  if(c)return {a:c.a,b:Math.min(c.b,c.a+4),why:'Tertunggak · ingatan '+Math.round(c.minR*100)+'%'};
+  return {a:null,why:'Tiada yang tertunggak — isi muka surat'};
+ }
+ if(ph==='tasmik'){
+  if(H&&(!T||H.end>T.end)){var a=Math.max(T?T.end+1:1,H.start|0),b=Math.min(H.end|0,a+4);return {a:a,b:b,why:'Hafazan '+mjRange(a,H.end|0)+' belum ditasmik'};}
+  return hqAfter(T,'Selepas '+(T?mjRange(T.start,T.end):'')+' (terakhir)')||{a:null,why:'Belum ada rekod — isi muka surat'};
+ }
+ if(ph==='hafazan')return hqAfter(H,'Selepas '+(H?mjRange(H.start,H.end):'')+' (terakhir)')||hqAfter(T,'Baharu selepas Tasmik M/S '+(T?T.end:''))||{a:null,why:'Belum ada rekod — isi muka surat'};
+ var L=hqLast(s,ph);
+ return hqAfter(L,'Selepas '+(L?mjRange(L.start,L.end):'')+' (terakhir)')||(ph==='talaqqi'?hqAfter(H,'Selepas Hafazan M/S '+(H?H.end:'')):null)||{a:null,why:'Belum ada rekod — isi muka surat'};
+}
+function hqDefaultPhase(s,an){
+ var T=hqLast(s,'tasmik'),H=hqLast(s,'hafazan');
+ if(an.chunks.length&&an.chunks[0].minR<0.5)return 'murajaah';
+ if(H&&(!T||H.end>T.end))return 'tasmik';
+ if(an.chunks.length)return 'murajaah';
+ return (s.records||[]).length?'hafazan':'talaqqi';
+}
+function hqToday(s){ // rekod / kehadiran hari ini (dari data sebenar)
+ var r=null;(s.records||[]).forEach(function(x){if(isToday(x.ts)&&(!r||x.ts>r.ts))r=x;});
+ var a=(s.attendance||[]).filter(function(x){return x.date===todayKey()&&x.status==='tidak';})[0]||null;
+ return {r:r,a:a};
+}
+function hqRecText(r){return PHASES[r.phase].short+' '+mjRange(r.start,r.end)+(r.grade&&GRADES[r.grade]?' · '+GRADES[r.grade].label:'');}
+function hqParentNote(s){
+ var L=rumahOf(s),y=dayKey(Date.now()-86400000);
+ for(var i=L.length-1;i>=0;i--){if(L[i].d<y)break;if(L[i].note)return L[i].note;}
+ return '';
+}
+function hqDoneOf(s){ // sesi ini, atau rekod/kehadiran sebenar hari ini (kekal walaupun app dibuka semula)
+ if(hqDone[s.id])return hqDone[s.id];
+ var T=hqToday(s);
+ if(T.r)return {kind:'data',text:hqRecText(T.r)};
+ if(T.a)return {kind:'dataatt',text:'Tidak hadir'};
+ return null;
+}
+function hqIsDone(s){var D=hqDoneOf(s);return !!(D&&D.kind!=='skip')||!!hqDone[s.id];}
+function renderHalaqah(){
+ var el=document.getElementById('s-halaqah');if(!el)return;
+ var G=hqGroups(),keys=Object.keys(G).sort(function(a,b){return (a==='0')-(b==='0')||a-b;});
+ if(!hqTk||!G[hqTk])hqTk=keys[0]||null;
+ var list=hqTk?G[hqTk]:[],now=Date.now(),cfg=mjCfg();
+ var nDone=list.filter(hqIsDone).length;
+ var head='<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama" aria-label="Kembali"><span data-ic="back"></span></button><div class="hero-title">MOD HALAQAH</div><div style="width:38px"></div></div>'
+  +'<div class="hq-head"><div><div class="hq-sub">'+esc((state.klass&&state.klass.name)||'Kelas')+' · '+rhDayLabel(todayKey())+'</div><div class="hq-ttl">'+(hqTk?hqTkLabel(hqTk):'—')+'</div></div>'
+  +'<div class="hq-cnt"><b>'+nDone+'/'+list.length+'</b><small>selesai</small></div></div>'
+  +'<div class="hq-bar"><div style="width:'+(list.length?Math.round(nDone/list.length*100):0)+'%"></div></div></div>';
+ if(!state.students.length){
+  el.innerHTML=head+'<div class="pad"><div class="empty"><div class="e-t">Belum ada pelajar</div><div class="e-s">Tambah pelajar di Tetapan.</div></div></div>';paintIcons(el);return;
+ }
+ var tabs='<div class="hq-tabs" role="tablist">'+keys.map(function(k){
+  var L=G[k],d=L.filter(hqIsDone).length;
+  return '<button role="tab" aria-selected="'+(k===hqTk)+'" class="hq-tab'+(k===hqTk?' on':'')+'" data-action="hq-tab" data-tk="'+k+'">'+hqTkLabel(k)+' <small>'+d+'/'+L.length+'</small></button>';
+ }).join('')+'</div>';
+ var rows=list.map(function(s){
+  var D=hqDoneOf(s),T=hqToday(s),open=(hqOpen===s.id&&!hqDone[s.id]),an=null,ph,sg;
+  if(open)D=null;
+  var right,sub;
+  if(D){
+   right='<span class="hq-pill '+(D.kind==='skip'?'skip':(D.kind==='att'||D.kind==='dataatt')?'abs':'ok')+'">'+esc(D.text)+'</span>';
+   sub=D.kind==='skip'?'Dilangkau · tekan untuk buka semula':D.kind.indexOf('data')===0?'Sudah direkod hari ini · tekan untuk tambah':'Disimpan · <button class="hq-undo" data-action="hq-undo" data-id="'+s.id+'">Batal</button>';
+  }else{
+   an=mjAnalyse(s,now,cfg);ph=hqPh[s.id]||hqDefaultPhase(s,an);sg=hqSuggest(s,ph,an);
+   right='<span class="hq-pill ph" style="background:'+tint(PC[ph],'22')+';color:'+PC[ph]+'">'+(sg.a?mjRange(sg.a,sg.b):'M/S ?')+'</span>';
+   sub=T.a?'<span style="color:var(--danger)">Tidak hadir (direkod)</span>':T.r?('Hari ini: '+esc(hqRecText(T.r))):('<b class="hq-phl" style="color:'+PC[ph]+';font-weight:900">'+PHASES[ph].short+'</b> · '+esc(sg.why));
+  }
+  var h='<div class="hq-row'+(D&&D.kind!=='skip'?' done':'')+(open?' open':'')+'">'
+   +(D&&(D.kind==='rec'||D.kind==='att')?'<div class="hq-top">':'<button class="hq-top" data-action="hq-open" data-id="'+s.id+'" aria-expanded="'+open+'">')
+   +'<span class="st-av" style="background:'+avatarColor(s.id)+'">'+esc(initials(s.name))+'</span>'
+   +'<span class="hq-mid"><b>'+esc(s.name)+'</b>'+(open?'':'<small>'+sub+'</small>')+'</span>'+(open?'':right)+(D&&(D.kind==='rec'||D.kind==='att')?'</div>':'</button>');
+  if(open){
+   var pv=(hqPg[s.id]!=null)?hqPg[s.id]:(sg.a?(sg.a===sg.b?String(sg.a):sg.a+'-'+sg.b):'');
+   var pn=hqParentNote(s);
+   h+='<div class="hq-panel">'
+    +'<div class="hq-why">'+svg(ICONS.target,14)+' '+esc(sg.why)+'</div>'
+    +(pn?'<div class="hq-why par">'+svg(ICONS.home,14)+' Ibu bapa: “'+esc(pn)+'”</div>':'')
+    +(T.r?'<div class="hq-why">'+svg(ICONS.check,14)+' Sudah direkod hari ini: '+esc(hqRecText(T.r))+'</div>':'')
+    +'<div class="hq-phs">'+HQ_PHASES.map(function(k){return '<button class="hq-ph'+(k===ph?' on':'')+'" style="--ac:'+PC[k]+'" data-action="hq-phase" data-id="'+s.id+'" data-ph="'+k+'">'+PHASES[k].short+'</button>';}).join('')+'</div>'
+    +'<label class="hq-pg"><span>M/S</span><input class="input" id="hq-page" inputmode="numeric" value="'+esc(pv)+'" placeholder="cth: 12 atau 12-14" data-id="'+s.id+'" aria-label="Muka surat"><em id="hq-auto">'+esc(pv?hqAutoTxt(pv):'')+'</em></label>'
+    +(GRADED[ph]
+      ?'<div class="hq-grades">'+GRADE_ORDER.map(function(g){return '<button class="mj-gb" style="--gc:'+GRADES[g].color+'" data-action="hq-grade" data-id="'+s.id+'" data-grade="'+g+'">'+GRADES[g].label+'</button>';}).join('')+'</div>'
+      :'<button class="btn btn-primary btn-block" data-action="hq-grade" data-id="'+s.id+'" style="margin-top:10px">'+svg(ICONS.check,16)+' Simpan '+PHASES[ph].label+'</button>')
+    +'<div class="hq-alt"><button class="btn btn-line sm" data-action="hq-absent" data-id="'+s.id+'">Tidak hadir</button><button class="btn btn-line sm" data-action="hq-skip" data-id="'+s.id+'">Langkau</button></div>'
+    +'</div>';
+  }
+  return h+'</div>';
+ }).join('');
+ var foot=(list.length&&nDone===list.length)?'<div class="mj-good" style="margin-top:12px">'+hqTkLabel(hqTk)+' selesai. '+(keys.length>1?'Pilih tingkatan lain di atas.':'')+'</div>'
+  :'<div class="mj-note">Tekan nama pelajar. Fasa &amp; muka surat dicadangkan ikut rekod pelajar; tekan penilaian untuk simpan dan terus ke pelajar seterusnya.</div>';
+ el.innerHTML=head+'<div class="pad" style="padding-top:12px">'+tabs+'<div class="hq-list">'+rows+'</div>'+foot+'</div>';
+ paintIcons(el);
+ var inp=document.getElementById('hq-page');
+ if(inp){inp.addEventListener('input',function(){hqPg[inp.getAttribute('data-id')]=inp.value;var a=document.getElementById('hq-auto');if(a)a.textContent=hqAutoTxt(inp.value);});
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var b=document.querySelector('#s-halaqah .hq-panel [data-action="hq-grade"]');if(b&&!GRADED[hqPh[inp.getAttribute('data-id')]||''])b.click();}});}
+}
+function hqAutoTxt(v){var p=parsePages(v);if(!p||p.invalid)return '';return surahLabel(p.start,p.end)+' · '+juzLabel(p.start,p.end);}
+function hqToggle(id){
+ if(hqDone[id]){if(hqDone[id].kind!=='skip')return;delete hqDone[id];hqOpen=id;renderHalaqah();return;}
+ hqOpen=(hqOpen===id)?null:id;renderHalaqah();
+ var r=document.querySelector('#s-halaqah .hq-row.open');if(r)r.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function hqSetPhase(id,ph){hqPh[id]=ph;delete hqPg[id];renderHalaqah();}
+function hqNext(id){
+ var G=hqGroups(),L=(G[hqTk]||[]),i=L.findIndex(function(s){return s.id===id;});
+ var nx=L.slice(i+1).concat(L.slice(0,i)).filter(function(s){return !hqIsDone(s);})[0];
+ hqOpen=nx?nx.id:null;renderHalaqah();
+ var r=document.querySelector('#s-halaqah .hq-row.open');if(r)r.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function hqSave(id,grade){
+ var s=studentById(id);if(!s)return;
+ var inp=document.getElementById('hq-page'),v=inp?inp.value:(hqPg[id]||'');
+ var p=parsePages(v);
+ if(!p){toast('Sila isi muka surat.',false);shake('hq-page');return;}
+ if(p.invalid){toast('Muka surat tidak sah (1 – 604).',false);shake('hq-page');return;}
+ var an=mjAnalyse(s,Date.now(),mjCfg()),ph=hqPh[id]||hqDefaultPhase(s,an);
+ var r=addRecord(s,{phase:ph,start:p.start,end:p.end,note:'',grade:grade,ts:Date.now()});
+ hqDone[id]={kind:'rec',id:r.id,text:hqRecText(r)};delete hqPg[id];delete hqPh[id];
+ popPoints(pointsFor(ph));
+ hqNext(id);
+}
+function hqAbsent(id){
+ var s=studentById(id);if(!s)return;
+ s.attendance=s.attendance||[];
+ var a={id:uid(),status:'tidak',date:todayKey(),note:'',ts:Date.now()};
+ s.attendance.push(a);saveState();
+ hqDone[id]={kind:'att',id:a.id,text:'Tidak hadir'};
+ hqNext(id);
+}
+function hqSkip(id){hqDone[id]={kind:'skip',text:'Dilangkau'};hqNext(id);}
+function hqUndo(id){
+ var D=hqDone[id],s=studentById(id);if(!D||!s)return;
+ if(D.kind==='rec')deleteRecord(s,D.id);
+ else if(D.kind==='att'){s.attendance=(s.attendance||[]).filter(function(a){return a.id!==D.id;});saveState();}
+ delete hqDone[id];hqOpen=id;renderHalaqah();toast('Dibatalkan.',true);
+}
 
 /* ---------------- MURAJAAH DI RUMAH (ibu bapa → guru) ---------------- */
 var rumahByStud={},rumahLoadedAt=0,rumahBusy=false,rumahErr='',rhDraft=null,RUMAH_LS='myua_rumah_v1';
