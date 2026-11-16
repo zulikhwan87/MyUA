@@ -3738,25 +3738,58 @@ function openScan(){
 function closeScan(){document.getElementById('scanOverlay').classList.remove('on');stopScanner();}
 function stopScanner(){scanActive=false;if(scanRAF){cancelAnimationFrame(scanRAF);scanRAF=null;}if(scanStream){scanStream.getTracks().forEach(function(t){t.stop();});scanStream=null;}}
 function scanFallbackUI(msg){document.getElementById('scanView').innerHTML='<div class="scan-fallback">'+svg(ICONS.scan,44)+'<div style="font-weight:800;color:#f4e7ea;margin:8px 0 4px">Imbasan kamera tidak tersedia</div><div style="font-size:12px">'+esc(msg||'Sila gunakan Isi Manual di bawah.')+'</div></div>';}
+var JSQR_URL='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js',JSQR_SRI='sha384-hStSInNIZ8ljtOVrmrgf7zdHMapaLBWoSnPTtF0nzsybp4+LuhDz6sHuEVpWIX8o',jsqrLoading=null;
+function loadJsQR(){ /* pengimbas sandaran untuk pelayar tanpa BarcodeDetector (cth: iPhone) */
+ if(window.jsQR)return Promise.resolve(window.jsQR);
+ if(jsqrLoading)return jsqrLoading;
+ jsqrLoading=new Promise(function(res,rej){
+  var sc=document.createElement('script');sc.src=JSQR_URL;sc.integrity=JSQR_SRI;sc.crossOrigin='anonymous';sc.async=true;
+  sc.onload=function(){window.jsQR?res(window.jsQR):rej();};sc.onerror=function(){jsqrLoading=null;sc.remove();rej();};
+  document.head.appendChild(sc);
+ });
+ return jsqrLoading;
+}
 function startScanner(){
  var view=document.getElementById('scanView');
- if(!('BarcodeDetector' in window)){scanFallbackUI('Pelayar ini tidak menyokong imbasan QR (cth: Safari iOS). Gunakan Isi Manual.');return;}
- if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scanFallbackUI('Kamera tidak boleh diakses pada peranti ini.');return;}
- view.innerHTML='<video playsinline muted autoplay></video><div class="scan-frame"></div><div class="scan-line"></div><div class="scan-note">Mengesan kod QR...</div>';
- var video=view.querySelector('video');
- try{scanDetector=new window.BarcodeDetector({formats:['qr_code']});}catch(e){try{scanDetector=new window.BarcodeDetector();}catch(_){scanFallbackUI('Pengesan QR tidak tersedia.');return;}}
- navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}).then(function(stream){
-  scanStream=stream;video.srcObject=stream;scanActive=true;video.play().catch(function(){});
-  var loop=function(){
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scanFallbackUI(location.protocol==='https:'||location.hostname==='localhost'?'Kamera tidak boleh diakses pada peranti ini. Gunakan Isi Manual.':'Kamera hanya boleh dibuka melalui pautan https://. Gunakan Isi Manual.');return;}
+ var native=('BarcodeDetector' in window);
+ view.innerHTML='<video playsinline muted autoplay></video><div class="scan-frame"></div><div class="scan-line"></div><div class="scan-note">'+(native?'Mengesan kod QR...':'Menyediakan pengimbas...')+'</div>';
+ var video=view.querySelector('video'),note=view.querySelector('.scan-note');
+ var getDetector=native?new Promise(function(res,rej){
+   try{res(new window.BarcodeDetector({formats:['qr_code']}));}catch(e){try{res(new window.BarcodeDetector());}catch(_){rej();}}
+  }).then(function(det){return function(){return det.detect(video).then(function(c){return c&&c.length?c[0].rawValue:null;});};})
+  :loadJsQR().then(function(jsQR){
+   var cv=document.createElement('canvas'),ctx=cv.getContext('2d',{willReadFrequently:true});
+   return function(){
+    var w=video.videoWidth,h=video.videoHeight;if(!w||!h)return Promise.resolve(null);
+    var k=Math.min(1,640/Math.max(w,h));cv.width=Math.round(w*k);cv.height=Math.round(h*k);
+    ctx.drawImage(video,0,0,cv.width,cv.height);
+    var img=ctx.getImageData(0,0,cv.width,cv.height),r=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+    return Promise.resolve(r&&r.data?r.data:null);
+   };
+  });
+ var streamP=navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+ Promise.all([streamP,getDetector.catch(function(){return null;})]).then(function(arr){
+  var stream=arr[0],detect=arr[1];
+  if(!scanOverlayOpen()){stream.getTracks().forEach(function(t){t.stop();});return;}
+  scanStream=stream;video.srcObject=stream;video.play().catch(function(){});
+  if(!detect){stopScanner();scanFallbackUI('Pengimbas QR gagal dimuatkan (perlu internet). Gunakan Isi Manual.');return;}
+  if(note)note.textContent='Mengesan kod QR...';
+  scanActive=true;var lastT=0;
+  var loop=function(ts){
    if(!scanActive)return;
-   scanDetector.detect(video).then(function(codes){
-    if(codes&&codes.length){onScanResult(codes[0].rawValue);return;}
+   if(!native&&ts-lastT<120){scanRAF=requestAnimationFrame(loop);return;} // jimat bateri
+   lastT=ts;
+   detect().then(function(val){
+    if(!scanActive)return;
+    if(val){onScanResult(val);return;}
     scanRAF=requestAnimationFrame(loop);
    }).catch(function(){scanRAF=requestAnimationFrame(loop);});
   };
   scanRAF=requestAnimationFrame(loop);
- }).catch(function(){scanFallbackUI('Keizinan kamera ditolak. Gunakan Isi Manual.');});
+ }).catch(function(){scanFallbackUI('Keizinan kamera ditolak. Benarkan kamera dalam tetapan pelayar, atau gunakan Isi Manual.');});
 }
+function scanOverlayOpen(){var o=document.getElementById('scanOverlay');return !!(o&&o.classList.contains('on'));}
 function normPhase(s){s=String(s||'').toLowerCase();if(PHASES[s])return s;if(s.indexOf('talaq')>=0)return 'talaqqi';if(s.indexOf('hafaz')>=0||s.indexOf('baharu')>=0||s.indexOf('baru')>=0)return 'hafazan';if(s.indexOf('muraj')>=0)return 'murajaah';if(s.indexOf('tasmi')>=0)return 'tasmik';if(s.indexOf('tahrir')>=0)return 'tahriri';return null;}
 function parseScan(txt){
  txt=String(txt||'').trim();
