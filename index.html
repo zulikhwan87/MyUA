@@ -2192,7 +2192,9 @@ function doReset(){
    ================================================================= */
 const CLOUD_KEY='myua_cloud_v3';
 var appReady=false;
-var cloudCfg={role:'guru',url:'',guruName:'',pin:'',adminKey:'',autosync:false,lastSync:0,loggedIn:false};
+/* Pautan Apps Script lalai — guru & ibu bapa tak perlu tampal sendiri. Boleh ditukar di 'Tetapan pautan sistem'. */
+var DEFAULT_URL='https://script.google.com/macros/s/AKfycbyABP31kmyg38quK-BYVUefAWKEmfIy5wKhCvtCpfbcw6kUkhNWzsgAA-zpiPFUiE-2iw/exec';
+var cloudCfg={role:'guru',url:DEFAULT_URL,guruName:'',pin:'',adminKey:'',autosync:false,lastSync:0,loggedIn:false};
 var cloudBusy=false, cloudPushTimer=null;
 
 function loadCloudCfg(){
@@ -2204,6 +2206,7 @@ function loadCloudCfg(){
    else{var v1=localStorage.getItem('myua_cloud_v1');if(v1){var q=JSON.parse(v1)||{};if(q.url)cloudCfg.url=q.url;cloudCfg.autosync=!!q.autosync;}}
    saveCloudCfg();
  }catch(e){}}
+ if(!cloudCfg.url)cloudCfg.url=DEFAULT_URL;
 }
 function saveCloudCfg(){try{localStorage.setItem(CLOUD_KEY,JSON.stringify(cloudCfg));}catch(e){}}
 
