@@ -673,6 +673,37 @@ body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.par
 .actf.on{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:var(--sh-sm)}
 .actf.on small{background:rgba(255,255,255,.25);color:#fff}
 
+/* ---- Murajaah di rumah ---- */
+.rh-card .rh-date{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink-3)}
+.rh-sub{font-size:12.5px;color:var(--ink-2);line-height:1.5;margin:-2px 0 10px}
+.rh-prog{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+.rh-prog b{color:var(--ink)}
+.rh-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 4px;border-bottom:1px solid var(--line)}
+.rh-item:first-of-type{margin-top:8px}
+.rh-ck{width:30px;height:30px;border-radius:9px;border:2px solid var(--line-2);display:grid;place-items:center;flex:none;color:transparent;transition:all .18s}
+.rh-item.on .rh-ck{background:var(--c-hafazan);border-color:var(--c-hafazan);color:#fff}
+.rh-item.on .rh-mid b{text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.rh-mid{flex:1;min-width:0;display:flex;flex-direction:column}
+.rh-mid b{font-size:14px;font-weight:900;color:var(--ink)}
+.rh-mid small{font-size:12px;color:var(--ink-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh-rates{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.rh-rates .mj-gb.sel{background:var(--gc);color:#fff}
+.rh-note{margin-top:10px;min-height:56px;font-size:14px}
+.rh-msg{font-size:12.5px;font-weight:700;color:var(--ok-ink);text-align:center;margin-top:8px;min-height:16px;line-height:1.4}
+.rh-msg.err{color:var(--danger)}
+.rh-hist{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--ink-2)}
+.rh-hist b{color:var(--ink)}
+.rh-dots{display:inline-flex;gap:4px;margin-top:6px}
+.rh-dots i{width:10px;height:10px;border-radius:3px;background:var(--track);display:block}
+.rh-dots i.full{background:#0e7a43}
+.rh-dots i.part{background:#ef8f1c}
+.rh-hist .rh-dots{margin-top:0}
+.rh-pill{font-size:11.5px;font-weight:900;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.rh-pill.ok{background:#e7f5ee;color:#0b6b3a}.rh-pill.part{background:#fff4e0;color:#8a5200}.rh-pill.no{background:var(--track);color:var(--ink-2)}
+html[data-dk] .rh-pill.ok{background:#14301f;color:#8fe0b0}html[data-dk] .rh-pill.part{background:#33260f;color:#f3c37a}
+.rh-quote{font-size:12px;font-style:italic;color:var(--ink-2);margin-top:4px;line-height:1.4}
+.rh-status{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink-3)}
+.rh-status .mj-chip,.sec-head .mj-chip[data-action]{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
 /* ============ TEMA GELAP (auto ikut telefon, atau pilih di Tetapan) ============ */
 :root[data-theme="dark"]{--bg:#170e11; --card:#241a1e; --ink:#f4eaed; --ink-2:#cbb5bc; --ink-3:#a58f97; --line:#3a2a30; --line-2:#4a3038;
   --g-soft:#36202a; --gold-soft:#3a3018; --danger-soft:#3d1b1e; --g-ink:#eaa9ba; --chart:#ff8fae; --chart-grid:#3a2a30; --ok-ink:#5fd497; --track:#33252a; --track-2:#33252a;
@@ -1773,6 +1804,7 @@ function renderAnalisis(){
     +'<button class="'+(analysisMode==='individu'?'on':'')+'" data-amode="individu">'+svg(ICONS.user,15)+' Individu</button>'
   +'</div>';
  var body=(analysisMode==='kelas')?analisisKelasHTML():analisisIndividuHTML();
+ if(parentMode&&analysisMode==='individu')body='<div id="rh-card">'+rumahParentHTML()+'</div>'+body;
  document.getElementById('s-analisis').innerHTML=head+'<div class="pad" style="padding-top:16px">'+toggle+body+'</div>';
  paintIcons(document.getElementById('s-analisis'));
 }
@@ -2305,7 +2337,7 @@ function parentFetch(auto){
  return fetch(cloudCfg.url,{method:'POST',body:JSON.stringify({action:'parentLogin',user:cloudCfg.parentUser,pin:cloudCfg.parentPin})})
  .then(function(r){return r.json();}).then(function(res){
   if(res&&res.ok&&Array.isArray(res.children)&&res.children.length){
-   parentChildren=res.children;parentMode=true;cloudCfg.role='ibubapa';cloudCfg.loggedIn=true;saveCloudCfg();
+   parentChildren=res.children;rumahByStud={};res.children.forEach(function(c){rumahByStud[c.student.id]=(c.rumah||[]).slice();});parentMode=true;cloudCfg.role='ibubapa';cloudCfg.loggedIn=true;saveCloudCfg();
    appReady=true;parentSetChild(0);enterApp();return;
   }
   cloudCfg.loggedIn=false;saveCloudCfg();if(auto)showLogin();
@@ -2652,7 +2684,7 @@ function onTargetChange(){var v=parseInt(this.value,10);if(!v||v<1)v=5;if(v>50)v
 var MJ={
  DAY:86400000,
  S0:{talaqqi:1.5,hafazan:4,tasmik:4,murajaah:5,tahriri:5},      // S awal (hari) pada peristiwa pertama
- GAIN:{talaqqi:0.25,hafazan:1.4,tasmik:1.4,murajaah:1.0,tahriri:1.2}, // kekuatan pertambahan S mengikut fasa
+ GAIN:{talaqqi:0.25,hafazan:1.4,tasmik:1.4,murajaah:1.0,tahriri:1.2,rumah:0.35}, // rumah = tanda ibu bapa (belum disahkan guru): kesan kecil // kekuatan pertambahan S mengikut fasa
  GRADE:{lancar:1.15,sederhana:1,lemah:0.5},                      // (pilihan) jika rekod ada medan "grade"
  MAXS:180, MAXINT:30
 };
@@ -2661,6 +2693,13 @@ function mjRet(st,now){return Math.exp(-Math.max(0,now-st.t)/MJ.DAY/st.S);}
 function mjInterval(S,thr){return Math.min(S*Math.log(1/thr),MJ.MAXINT);}
 
 function mjEvent(pg,p,phase,ts,grade){
+ if(phase==='rumah'){ // murajaah di rumah: hanya kuatkan muka surat yang sudah disahkan; tidak cipta atau sahkan muka surat baharu
+  var sr=pg[p];if(!sr||!sr.conf)return;
+  var dr=(ts-sr.t)/MJ.DAY;if(dr<0.25)return;
+  if(grade==='lemah')sr.S=Math.max(1,sr.S*0.85);
+  else{var Rr=Math.exp(-dr/sr.S),fr=0.8+1.2*(1-Rr);if(Rr<0.4)fr*=0.6;sr.S=Math.min(MJ.MAXS,sr.S*(1+MJ.GAIN.rumah*fr*(MJ.GRADE[grade]||1)));}
+  if(ts>sr.t)sr.t=ts;sr.n++;return;
+ }
  var st=pg[p], gf=MJ.GRADE[grade]||1, confirm=(phase!=='talaqqi');
  if(!st){
   var s0=(MJ.S0[phase]||5)*gf;
@@ -2685,14 +2724,22 @@ function mjEvent(pg,p,phase,ts,grade){
  st.n++;
  if(confirm&&!st.conf){st.conf=true;st.cts=ts;}
 }
-function mjBuild(s,until){
- var pg=new Array(TOTAL_PAGES+2);
- var recs=(s.records||[]).slice().sort(function(a,b){return a.ts-b.ts;});
- recs.forEach(function(r){
+function mjBuild(s,until,opt){
+ var pg=new Array(TOTAL_PAGES+2),ev=[];
+ (s.records||[]).forEach(function(r){
   if(!r||!r.phase||!r.ts)return;
   if(until&&r.ts>until)return;
-  var a=Math.max(1,(r.start|0)),b=Math.min(TOTAL_PAGES,(r.end|0));
-  for(var p=a;p<=b;p++)mjEvent(pg,p,r.phase,r.ts,r.grade);
+  ev.push({ts:r.ts,a:r.start,b:r.end,ph:r.phase,g:r.grade});
+ });
+ rumahOf(s).forEach(function(e){
+  if(!e||!e.ts||(until&&e.ts>until))return;
+  if(opt&&opt.beforeDay&&e.d>=opt.beforeDay)return;
+  (e.items||[]).forEach(function(it){if(it&&it[2])ev.push({ts:e.ts,a:it[0],b:it[1],ph:'rumah',g:e.rating});});
+ });
+ ev.sort(function(x,y){return x.ts-y.ts;});
+ ev.forEach(function(x){
+  var a=Math.max(1,(x.a|0)),b=Math.min(TOTAL_PAGES,(x.b|0));
+  for(var p=a;p<=b;p++)mjEvent(pg,p,x.ph,x.ts,x.g);
  });
  return pg;
 }
@@ -2704,8 +2751,8 @@ function mjChunks(list){
  });
  return out;
 }
-function mjAnalyse(s,now,cfg){
- var pg=mjBuild(s,now),thr=cfg.thr,mem=0,inprog=0,sumR=0,load=0,crit=0,strong=0,due=[],up=[];
+function mjAnalyse(s,now,cfg,opt){
+ var pg=mjBuild(s,now,opt),thr=cfg.thr,mem=0,inprog=0,sumR=0,load=0,crit=0,strong=0,due=[],up=[];
  for(var p=1;p<=TOTAL_PAGES;p++){
   var st=pg[p];if(!st)continue;
   if(!st.conf){inprog++;continue;}
@@ -3032,13 +3079,15 @@ function renderMurajaah(){
  var head='<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama"><span data-ic="back"></span></button><div class="hero-title">MURAJAAH PINTAR</div><div style="width:38px"></div></div>'
   +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">Jadual ulang kaji berasaskan keluk kelupaan &amp; unjuran khatam</div></div></div>';
  var seg='<div class="rp-seg" style="margin-bottom:12px">'
-  +[['today','Hari Ini'],['khatam','Unjuran Khatam'],['kelas','Kelas']].map(function(v){return '<button class="'+(mjView===v[0]?'on':'')+'" data-action="mj-view" data-view="'+v[0]+'">'+v[1]+'</button>';}).join('')
+  +[['today','Hari Ini'],['khatam','Unjuran'],['kelas','Kelas'],['rumah','Rumah']].map(function(v){return '<button class="'+(mjView===v[0]?'on':'')+'" data-action="mj-view" data-view="'+v[0]+'">'+v[1]+'</button>';}).join('')
   +'</div>';
  var body='';
  if(!state.students.length||!s){
   body='<div class="empty" style="margin-top:20px"><div class="e-ic">'+svg(ICONS.users,32)+'</div><div class="e-t">Belum ada pelajar</div><div class="e-s">Tambah pelajar di Tetapan untuk mula.</div></div>';
  }else if(mjView==='kelas'){
   body=mjClassHTML(cfg,now);
+ }else if(mjView==='rumah'){
+  body=mjRumahHTML(now);
  }else{
   var opts=state.students.slice().sort(function(a,b){return (a.no||0)-(b.no||0);}).map(function(x){return '<option value="'+x.id+'"'+(x.id===s.id?' selected':'')+'>'+esc(x.name)+'</option>';}).join('');
   body='<select class="picker" id="mj-student" aria-label="Pilih pelajar" style="margin-bottom:0">'+opts+'</select>'
@@ -3046,6 +3095,7 @@ function renderMurajaah(){
  }
  el.innerHTML=head+'<div class="pad" style="padding-top:16px">'+seg+body+'</div>';
  paintIcons(el);
+ if(!parentMode&&Date.now()-rumahLoadedAt>5*60000)rumahLoad();
 }
 
 function mjDone(a,b,grade){
@@ -3848,6 +3898,11 @@ document.addEventListener('click',function(e){
   case 'rep-mode':setRepMode(el.getAttribute('data-mode'));break;
   case 'rep-prev':stepRepMonth(-1);break;
   case 'rep-next':stepRepMonth(1);break;
+  case 'rh-tick':rhTick(+el.getAttribute('data-i'));break;
+  case 'rh-rate':rhRate(el.getAttribute('data-r'));break;
+  case 'rh-send':rhSend();break;
+  case 'rh-refresh':rumahLoad(true);break;
+  case 'rh-copy':rhCopy();break;
   case 'mj-view':mjView=el.getAttribute('data-view')||'today';renderMurajaah();break;
   case 'mj-open':mjSel=el.getAttribute('data-id');mjView='today';navTo('murajaah');break;
   case 'set-grade':setGrade(el.getAttribute('data-grade'));break;
@@ -3959,6 +4014,160 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
  }
 })();
 
+/* ---------------- MURAJAAH DI RUMAH (ibu bapa → guru) ---------------- */
+var rumahByStud={},rumahLoadedAt=0,rumahBusy=false,rumahErr='',rhDraft=null,RUMAH_LS='myua_rumah_v1';
+var HARI_MS=['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'];
+function rumahOf(s){return (s&&rumahByStud[s.id])||[];}
+function rumahSetAll(entries){
+ rumahByStud={};
+ (entries||[]).forEach(function(e){if(e&&e.sid)(rumahByStud[e.sid]=rumahByStud[e.sid]||[]).push(e);});
+ Object.keys(rumahByStud).forEach(function(k){rumahByStud[k].sort(function(a,b){return a.ts-b.ts;});});
+}
+function rumahLoadCache(){try{var o=JSON.parse(localStorage.getItem(RUMAH_LS)||'null');if(o&&o.g===guruId()){rumahSetAll(o.e);}}catch(e){}}
+function rumahSaveCache(entries){try{localStorage.setItem(RUMAH_LS,JSON.stringify({g:guruId(),at:Date.now(),e:entries}));}catch(e){}}
+function rumahLoad(force){
+ if(parentMode||rumahBusy||!cloudReady()||!cloudCfg.pin)return;
+ rumahBusy=true;if(force&&mjView==='rumah'&&isOn('murajaah'))renderMurajaah();
+ fetch(cloudCfg.url,{method:'POST',body:JSON.stringify({action:'rumahLoad',guruId:guruId(),pin:cloudCfg.pin})})
+ .then(function(r){return r.json();}).then(function(res){
+  if(res&&res.ok){rumahSetAll(res.entries);rumahSaveCache(res.entries||[]);rumahErr='';}
+  else rumahErr=(res&&res.error==='unknown action')?'Pelayan belum dikemas kini — tampal Code.gs baharu & Deploy versi baharu.':(res&&res.error==='wrong-pin')?'Kata laluan guru tidak sepadan. Log keluar & masuk semula.':'Gagal memuat ('+((res&&res.error)||'ralat')+').';
+ }).catch(function(){rumahErr='Tiada sambungan internet. Memaparkan data terakhir.';})
+ .then(function(){rumahBusy=false;rumahLoadedAt=Date.now();if(isOn('murajaah'))renderMurajaah();});
+}
+function isOn(n){var e=document.getElementById('s-'+n);return !!(e&&e.classList.contains('on'));}
+function rhDayLabel(d){var p=d.split('-'),t=new Date(+p[0],+p[1]-1,+p[2]);return HARI_MS[t.getDay()]+', '+t.getDate()+' '+MONTHS_MS[t.getMonth()];}
+function rhLast7(s){ // [{d,e}] 7 hari terakhir, lama → baru
+ var out=[],list=rumahOf(s);
+ for(var i=6;i>=0;i--){var d=dayKey(Date.now()-i*86400000);out.push({d:d,e:list.filter(function(x){return x.d===d;})[0]||null});}
+ return out;
+}
+function rhDots(s){
+ return '<span class="rh-dots" aria-label="7 hari terakhir">'+rhLast7(s).map(function(o){
+  var c=!o.e?'':(o.e.done>=o.e.total?' full':' part');
+  return '<i class="'+c.trim()+'" title="'+rhDayLabel(o.d)+(o.e?(': '+o.e.done+'/'+o.e.total+' m/s'):': tiada')+'"></i>';
+ }).join('')+'</span>';
+}
+/* ---- Paparan ibu bapa ---- */
+function rhRetOf(an,a,b,now){var m=1;for(var p=a;p<=b;p++){var st=an.pg[p];if(st&&st.conf)m=Math.min(m,mjRet(st,now));}return m;}
+function rumahParentHTML(){
+ var s=state.students[0];if(!s)return '';
+ var today=todayKey(),now=Date.now(),cfg=mjCfg();
+ var an=mjAnalyse(s,now,cfg,{beforeDay:today});
+ var mine=rumahOf(s).filter(function(e){return e.d===today;})[0]||null;
+ if(!rhDraft||rhDraft.sid!==s.id||rhDraft.d!==today){
+  var items=mine?mine.items.map(function(x){return [x[0],x[1],x[2]?1:0];}):an.chunks.map(function(c){return [c.a,c.b,0];});
+  rhDraft={sid:s.id,d:today,items:items,rating:mine?mine.rating:'',note:mine?mine.note:'',busy:false,msg:''};
+ }
+ var D=rhDraft,first=esc(String(s.name||'').split(' ')[0]);
+ var h='<div class="mj-card rh-card"><div class="mj-ct">'+svg(ICONS.home,16)+' Murajaah di Rumah <span class="rh-date">'+rhDayLabel(today)+'</span></div>';
+ if(!an.memCount){
+  return h+'<div class="mj-note" style="margin-top:0">Belum ada hafazan '+first+' yang disahkan guru melalui Tasmik. Senarai murajaah di rumah akan muncul selepas itu.</div></div>';
+ }
+ if(!D.items.length){
+  return h+'<div class="mj-good" style="margin-top:0">Tiada murajaah dijadualkan hari ini — ingatan '+first+' masih kukuh. Galakkan '+first+' mengulang hafazan terkini.</div>'+rhHistHTML(s)+'</div>';
+ }
+ var tot=0,dn=0;D.items.forEach(function(it){var n=it[1]-it[0]+1;tot+=n;if(it[2])dn+=n;});
+ h+='<div class="rh-sub">Senarai daripada Murajaah Pintar: muka surat yang paling perlu diulang oleh '+first+' hari ini. Tanda selepas '+first+' membaca kepada anda.</div>';
+ h+='<div class="rh-prog"><span>Selesai</span><b>'+dn+' / '+tot+' m/s</b></div><div class="mj-bar"><div style="width:'+Math.max(1,Math.round(dn/tot*100))+'%"></div></div>';
+ h+=D.items.map(function(it,i){
+  var R=rhRetOf(an,it[0],it[1],now);
+  return '<button type="button" class="rh-item'+(it[2]?' on':'')+'" data-action="rh-tick" data-i="'+i+'" aria-pressed="'+(it[2]?'true':'false')+'">'
+   +'<span class="rh-ck">'+svg(ICONS.check,16)+'</span>'
+   +'<span class="rh-mid"><b>'+mjRange(it[0],it[1])+'</b><small>'+esc(surahLabel(it[0],it[1]))+' · '+juzLabel(it[0],it[1])+'</small></span>'
+   +'<span class="mj-ret" style="--ac:'+mjCol(R,cfg.thr)+'">'+Math.round(R*100)+'%</span></button>';
+ }).join('');
+ h+='<div class="field-lbl" style="margin:12px 0 6px">Bagaimana bacaan '+first+'? (pilihan)</div><div class="rh-rates">'
+  +GRADE_ORDER.map(function(g){return '<button type="button" class="mj-gb'+(D.rating===g?' sel':'')+'" style="--gc:'+GRADES[g].color+'" data-action="rh-rate" data-r="'+g+'" aria-pressed="'+(D.rating===g)+'">'+GRADES[g].label+'</button>';}).join('')+'</div>';
+ h+='<textarea class="input rh-note" id="rh-note" maxlength="300" placeholder="Catatan untuk guru (pilihan), cth: tersekat ayat 5" aria-label="Catatan untuk guru">'+esc(D.note)+'</textarea>';
+ h+='<button type="button" class="btn btn-primary btn-block" data-action="rh-send" style="margin-top:10px"'+(D.busy?' disabled':'')+'>'+svg(ICONS.check,17)+' '+(D.busy?'Menghantar…':(mine?'Kemas Kini & Hantar Semula':'Hantar kepada Guru'))+'</button>';
+ h+='<div class="rh-msg'+(D.msgErr?' err':'')+'" role="status">'+(D.msg?esc(D.msg):(mine?('Dihantar pada '+fmtTime(mine.ts)+'. Anda boleh kemas kini sebelum tengah malam.'):''))+'</div>';
+ h+=rhHistHTML(s)+'</div>';
+ return h;
+}
+function rhHistHTML(s){
+ var n=rhLast7(s).filter(function(o){return o.e&&o.e.done>0;}).length;
+ return '<div class="rh-hist"><span>7 hari terakhir: <b>'+n+' hari</b></span>'+rhDots(s)+'</div>';
+}
+function rhRender(){var c=document.getElementById('rh-card');if(c){c.innerHTML=rumahParentHTML();paintIcons(c);}}
+function rhKeepNote(){var t=document.getElementById('rh-note');if(t&&rhDraft)rhDraft.note=t.value;}
+function rhTick(i){rhKeepNote();if(!rhDraft||!rhDraft.items[i])return;rhDraft.items[i][2]=rhDraft.items[i][2]?0:1;rhDraft.msg='';rhRender();}
+function rhRate(g){rhKeepNote();if(!rhDraft)return;rhDraft.rating=(rhDraft.rating===g)?'':g;rhDraft.msg='';rhRender();}
+function rhSend(){
+ rhKeepNote();var D=rhDraft;if(!D||D.busy)return;
+ if(!D.items.some(function(it){return it[2];})){D.msg='Tandakan sekurang-kurangnya satu muka surat yang sudah dibaca.';D.msgErr=true;rhRender();return;}
+ D.busy=true;D.msg='';D.msgErr=false;rhRender();
+ fetch(cloudCfg.url,{method:'POST',body:JSON.stringify({action:'parentSubmit',user:cloudCfg.parentUser,pin:cloudCfg.parentPin,sid:D.sid,d:D.d,items:D.items,rating:D.rating,note:String(D.note||'').trim()})})
+ .then(function(r){return r.json();}).then(function(res){
+  D.busy=false;
+  if(res&&res.ok&&res.entry){
+   var L=(rumahByStud[D.sid]=(rumahByStud[D.sid]||[]).filter(function(e){return e.d!==res.entry.d;}));
+   L.push(res.entry);
+   D.msg='Dihantar kepada guru pada '+fmtTime(res.entry.ts)+'. Terima kasih!';D.msgErr=false;
+   toast('Murajaah di rumah dihantar.',true);
+  }else{
+   D.msgErr=true;
+   D.msg=(res&&res.error==='unknown action')?'Sistem sekolah belum dikemas kini untuk ciri ini. Sila maklumkan kepada guru.':(res&&res.error==='locked')?'Terlalu banyak percubaan. Cuba lagi selepas 15 minit.':(res&&res.error==='no-match')?'Kata laluan telah berubah. Sila log keluar dan masuk semula.':'Gagal menghantar ('+((res&&res.error)||'ralat')+'). Cuba lagi.';
+  }
+  rhRender();
+ }).catch(function(){D.busy=false;D.msgErr=true;D.msg='Tiada sambungan internet. Tanda anda masih ada — tekan Hantar semula bila ada internet.';rhRender();});
+}
+/* ---- Paparan guru (Murajaah Pintar → Rumah) ---- */
+function mjRumahHTML(now){
+ var today=todayKey();
+ if(!cloudReady()||!cloudCfg.pin){
+  return '<div class="mj-mid2" style="margin-top:4px">Log masuk sebagai guru (dalam talian) untuk melihat murajaah yang dihantar oleh ibu bapa.</div>';
+ }
+ var withP=state.students.filter(function(s){return s.parent&&s.parent.user;});
+ var noP=state.students.length-withP.length;
+ var rows=withP.map(function(s){
+  var L=rumahOf(s),t=L.filter(function(e){return e.d===today;})[0]||null;
+  var days7=rhLast7(s).filter(function(o){return o.e&&o.e.done>0;}).length;
+  var last=L.length?L[L.length-1]:null;
+  var gap=last?Math.floor((startOfDay(now)-startOfDay(new Date(last.d+'T00:00:00').getTime()))/86400000):99;
+  return {s:s,t:t,days7:days7,gap:gap};
+ }).sort(function(a,b){return (a.t?1:0)-(b.t?1:0)||b.gap-a.gap||(a.s.no||0)-(b.s.no||0);});
+ var sent=rows.filter(function(r){return r.t;}).length,cons=rows.filter(function(r){return r.days7>=5;}).length,idle=rows.filter(function(r){return r.gap>=3;}).length;
+ var h='<div class="rh-status">'+(rumahBusy?'Memuat…':(rumahLoadedAt?('Dikemas kini '+fmtTime(rumahLoadedAt)):'Belum dimuat'))
+  +'<button type="button" class="mj-chip" data-action="rh-refresh" style="margin-left:auto">'+svg(ICONS.refresh,13)+' Segar semula</button></div>';
+ if(rumahErr)h+='<div class="mj-warn" style="margin-top:8px">'+esc(rumahErr)+'</div>';
+ if(!withP.length){
+  return h+'<div class="mj-mid2">Belum ada pelajar yang mempunyai akaun ibu bapa. Tetapkan <b>Akaun Ibu Bapa</b> bagi setiap pelajar di Tetapan → Senarai Pelajar, kemudian kongsi kod &amp; kata laluan dengan ibu bapa.</div>';
+ }
+ h+='<div class="kpi-grid">'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.hafazan)+';color:'+PC.hafazan+'">'+svg(ICONS.check,16)+'</div><div class="k-v">'+sent+' <small>/ '+rows.length+'</small></div><div class="k-l">Hantar hari ini</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.tasmik)+';color:'+PC.tasmik+'">'+svg(ICONS.calendar,16)+'</div><div class="k-v">'+cons+' <small>pelajar</small></div><div class="k-l">Konsisten (5+ hari / 7)</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:var(--danger-soft);color:#e5484d">'+svg(ICONS.flash,16)+'</div><div class="k-v">'+idle+' <small>pelajar</small></div><div class="k-l">Tiada 3 hari atau lebih</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.murajaah)+';color:'+PC.murajaah+'">'+svg(ICONS.users,16)+'</div><div class="k-v">'+noP+' <small>pelajar</small></div><div class="k-l">Tiada akaun ibu bapa</div></div>'
+  +'</div>';
+ h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="home"></span> '+rhDayLabel(today)+'</div>'
+  +(rows.length-sent?'<button type="button" class="mj-chip" data-action="rh-copy">'+svg(ICONS.list,13)+' Salin senarai belum hantar</button>':'')+'</div>';
+ h+=rows.map(function(r){
+  var s=r.s,t=r.t,meta,pill;
+  if(t){meta='<span><b>'+t.done+'/'+t.total+'</b> m/s dibaca</span>'+(t.rating&&GRADES[t.rating]?'<span style="color:'+(t.rating==='lancar'?'var(--ok-ink)':GRADES[t.rating].color)+'">'+GRADES[t.rating].label+'</span>':'')+'<span>'+fmtTime(t.ts)+'</span>';
+   pill=t.done>=t.total?'<span class="rh-pill ok">Lengkap</span>':'<span class="rh-pill part">Separa</span>';}
+  else{meta='<span>Belum hantar hari ini</span>'+(r.gap<99?'<span>Terakhir: '+(r.gap===1?'semalam':r.gap+' hari lalu')+'</span>':'<span>Belum pernah</span>');
+   pill='<span class="rh-pill no">Belum</span>';}
+  return '<button class="stud" data-action="mj-open" data-id="'+s.id+'">'
+   +'<div class="st-av" style="background:'+avatarColor(s.id)+'">'+esc(initials(s.name))+'</div>'
+   +'<div class="st-mid"><div class="st-n">'+esc(s.name)+'</div><div class="st-meta">'+meta+'</div>'
+   +(t&&t.note?'<div class="rh-quote">“'+esc(t.note)+'”</div>':'')
+   +rhDots(s)+'</div><div class="st-r">'+pill+'</div></button>';
+ }).join('');
+ h+='</div><div class="mj-note">Tanda ibu bapa dianggap <b>belum disahkan</b>: ia hanya menguatkan sedikit anggaran ingatan bagi muka surat yang sudah disahkan melalui Tasmik. Penilaian guru tetap menjadi ukuran utama. Titik: hijau = lengkap, kuning = separa, kosong = tiada.</div>';
+ return h;
+}
+function rhCopy(){
+ var today=todayKey();
+ var miss=state.students.filter(function(s){return s.parent&&s.parent.user&&!rumahOf(s).some(function(e){return e.d===today;});})
+  .sort(function(a,b){return (a.no||0)-(b.no||0);});
+ var txt='Murajaah di rumah — '+rhDayLabel(today)+'\nBelum dihantar ('+miss.length+'):\n'+miss.map(function(s,i){return (i+1)+'. '+s.name;}).join('\n')
+  +'\n\nIbu bapa: buka MyUA → tanda muka surat yang sudah dibaca → Hantar kepada Guru. Terima kasih.';
+ var ok=function(){toast('Senarai disalin. Tampal di group WhatsApp.',true);};
+ var fb=function(){var t=document.createElement('textarea');t.value=txt;t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();try{document.execCommand('copy');ok();}catch(e){prompt('Salin teks ini:',txt);}document.body.removeChild(t);};
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(ok,fb);else fb();
+}
+
 /* ---------------- INIT ---------------- */
 function init(){
  loadCloudCfg();
@@ -3993,6 +4202,7 @@ function init(){
  var lkey=document.getElementById('lg-key');if(lkey)lkey.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();doLogin();}});
  if(!cloudCfg.guruName&&state.klass&&state.klass.guru){cloudCfg.guruName=state.klass.guru;saveCloudCfg();}
  renderCloudUI();
+ if(cloudCfg.role!=='ibubapa')rumahLoadCache();
  if(cloudCfg.loggedIn&&cloudCfg.role==='ibubapa'){
   if(urlOk()&&cloudCfg.parentUser&&cloudCfg.parentPin)parentFetch(true);else showLogin();
  }else if(cloudCfg.loggedIn){
