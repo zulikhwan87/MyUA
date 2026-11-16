@@ -1,5 +1,5 @@
 /* MyUA service worker — rangkaian dahulu (sentiasa versi terkini), cache sebagai sandaran luar talian */
-const CACHE = 'myua-shell-v2';
+const CACHE = 'myua-shell-v3';
 const SHELL = ['./', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
