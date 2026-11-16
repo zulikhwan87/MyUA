@@ -673,6 +673,12 @@ body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.par
 .actf.on{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:var(--sh-sm)}
 .actf.on small{background:rgba(255,255,255,.25);color:#fff}
 
+/* ---- Murajaah harian ---- */
+.mjd-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 7px}
+.mjd-tag{font-size:12px;font-weight:900;padding:3px 10px;border-radius:99px;color:#fff}
+.mjd-tag.baru{background:#5b54d6}.mjd-tag.lama{background:#ef8f1c}
+.mjd-sub{font-size:12px;font-weight:700;color:var(--ink-2)}
+.mj-row.mjd-done{opacity:.8}
 /* ---- Mod Halaqah ---- */
 .hq-entry{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:14px;padding:13px 14px;border-radius:var(--r-lg);background:var(--card);border:1.5px solid var(--line-2);box-shadow:var(--sh-sm);color:var(--ink)}
 .hq-entry .hq-ei{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff;background:linear-gradient(135deg,var(--g-mid),var(--g-dark))}
@@ -1387,7 +1393,7 @@ function normalizeState(d){
   klass:Object.assign({name:'',guru:'',sekolah:'',tahun:String(new Date().getFullYear())},d.klass||{}),
   points:Object.assign(defaultPoints(),d.points||{}),
   target:(typeof d.target==='number'&&d.target>0)?d.target:5,
-  mur:Object.assign({cap:10,thr:70,khatam:''},d.mur||{}),
+  mur:Object.assign({cap:10,baru:2,lama:5,thr:70,khatam:''},d.mur||{}),
   comments:(d.comments&&typeof d.comments==='object'&&!Array.isArray(d.comments))?d.comments:{},
   annual:Object.assign({end:''},d.annual||{}),
   students:students,
@@ -2739,7 +2745,47 @@ var MJ={
  GRADE:{lancar:1.15,sederhana:1,lemah:0.5},                      // (pilihan) jika rekod ada medan "grade"
  MAXS:180, MAXINT:30
 };
-function mjCfg(){var m=state.mur||{};return {cap:Math.max(1,+m.cap||10),thr:Math.min(0.95,Math.max(0.3,(+m.thr||70)/100)),khatam:m.khatam||''};}
+function mjCfg(){var m=state.mur||{};
+ var baru=Math.max(1,Math.min(10,+m.baru||2)),lama=Math.max(1,Math.min(40,+m.lama||5));
+ return {cap:baru+lama,baru:baru,lama:lama,thr:Math.min(0.95,Math.max(0.3,(+m.thr||70)/100)),khatam:m.khatam||''};}
+/* ---- Jadual harian: Murajaah Baharu + Murajaah Lama ----
+ * Baharu: N m/s (lalai 2) betul-betul SEBELUM muka surat Tasmik terakhir (cth Tasmik M/S 30 → M/S 28–29).
+ * Lama  : satu blok N m/s berturutan (lalai 5) daripada juzuk SEBELUM juzuk Tasmik, dipilih ikut formula
+ *         (purata kekuatan ingatan paling rendah). Muka surat lain dalam juzuk Tasmik semasa tidak dijadualkan.
+ * Pilihan dibuat daripada data sebelum hari ini supaya jadual kekal sepanjang hari. */
+function mjLastTasmikRec(s,until){var b=null;(s.records||[]).forEach(function(r){if(r&&r.phase==='tasmik'&&r.ts&&(!until||r.ts<=until)&&(!b||r.ts>b.ts))b=r;});return b;}
+function mjDoneToday(s,a,b,now){ // rekod Murajaah hari ini yang meliputi semua m/s a..b
+ var cov={},g='';(s.records||[]).forEach(function(r){if(r&&r.phase==='murajaah'&&isToday(r.ts)){for(var p=r.start;p<=r.end;p++)cov[p]=1;if(r.start<=a&&r.end>=b&&r.grade)g=r.grade;}});
+ for(var p=a;p<=b;p++)if(!cov[p])return null;
+ return {grade:g};
+}
+function mjDaily(s,now,cfg){
+ cfg=cfg||mjCfg();now=now||Date.now();
+ var sod=startOfDay(now),T=mjLastTasmikRec(s,sod-1)||mjLastTasmikRec(s,now);
+ var out={T:T?(T.end|0):0,tjuz:0,baru:null,lama:null,poolCount:0,poolJuz:0};
+ if(!T)return out;
+ var pg=mjBuild(s,sod-1),tp=out.T,tj=getJuz(tp);out.tjuz=tj;
+ var Rof=function(p){var st=pg[p];return st?mjRet(st,now):0;};
+ // Murajaah Baharu
+ var bb=tp-1,ba=Math.max(1,tp-cfg.baru);
+ if(bb>=1){var mr=1,sr=0;for(var p=ba;p<=bb;p++){var r=Rof(p);mr=Math.min(mr,r);sr+=r;}
+  out.baru={a:ba,b:bb,n:bb-ba+1,minR:mr,avgR:sr/(bb-ba+1),done:mjDoneToday(s,ba,bb,now)};}
+ // Murajaah Lama: juzuk sebelum juzuk Tasmik
+ var lim=(tj>1)?JUZ_START[tj-1]-1:0,runs=[],cur=null;out.poolJuz=tj-1;
+ for(var q=1;q<=lim;q++){var st=pg[q];
+  if(st&&st.conf){out.poolCount++;if(cur&&cur.b===q-1)cur.b=q;else{cur={a:q,b:q};runs.push(cur);}}}
+ var best=null;
+ runs.forEach(function(rn){
+  var len=rn.b-rn.a+1,w=Math.min(cfg.lama,len);
+  for(var a=rn.a;a+w-1<=rn.b;a++){
+   var sum=0,mn=1;for(var p=a;p<a+w;p++){var r=Rof(p);sum+=r;mn=Math.min(mn,r);}
+   var avg=sum/w;
+   if(!best||avg<best.avgR-1e-9||(Math.abs(avg-best.avgR)<1e-9&&w>best.n))best={a:a,b:a+w-1,n:w,avgR:avg,minR:mn};
+  }
+ });
+ if(best){best.done=mjDoneToday(s,best.a,best.b,now);out.lama=best;}
+ return out;
+}
 function mjRet(st,now){return Math.exp(-Math.max(0,now-st.t)/MJ.DAY/st.S);}
 function mjInterval(S,thr){return Math.min(S*Math.log(1/thr),MJ.MAXINT);}
 
@@ -2963,10 +3009,10 @@ function mjStudent(){var s=mjSel&&studentById(mjSel);if(!s)s=activeStudent();ret
 
 function mjHomeBanner(){
  var cfg=mjCfg(),now=Date.now(),nDue=0,pages=0;
- state.students.forEach(function(s){var a=mjAnalyse(s,now,cfg);if(a.due>0){nDue++;pages+=a.due;}});
+ state.students.forEach(function(s){var d=mjDaily(s,now,cfg),k=0;[d.baru,d.lama].forEach(function(c){if(c&&!c.done)k+=c.n;});if(k){nDue++;pages+=k;}});
  return '<div class="mj-banner"><div class="mb-ic">'+svg(ICONS.refresh,22)+'</div>'
   +'<div><div class="mb-t">Murajaah Pintar</div><div class="mb-s">'
-  +(nDue>0?('<b>'+nDue+' pelajar</b> ada murajaah tertunggak ('+pages+' m/s)'):'Tiada murajaah tertunggak hari ini')
+  +(nDue>0?('<b>'+nDue+' pelajar</b> belum selesai murajaah hari ini ('+pages+' m/s)'):'Murajaah hari ini selesai untuk semua pelajar')
   +'</div></div><button class="btn btn-primary sm" data-nav="murajaah">Buka</button></div>';
 }
 
@@ -2980,6 +3026,19 @@ function mjKpis(an){
   +'</div>';
 }
 
+function mjDailyRow(kind,c,cfg,title,sub,emptyMsg){
+ var h='<div class="mjd-head"><span class="mjd-tag '+kind+'">'+title+'</span><span class="mjd-sub">'+sub+'</span></div>';
+ if(!c)return h+'<div class="mj-note" style="margin:2px 0 12px">'+emptyMsg+'</div>';
+ var col=mjCol(c.minR,cfg.thr);
+ h+='<div class="mj-row'+(c.done?' mjd-done':'')+'" style="--ac:'+(c.done?'#0e7a43':col)+'"><div class="mj-mid">'
+  +'<div class="mj-ms">'+mjRange(c.a,c.b)+' <span style="font-weight:700;color:var(--ink-2);font-size:12px">· '+c.n+' m/s</span></div>'
+  +'<div class="mj-sub">'+esc(surahLabel(c.a,c.b))+' · '+juzLabel(c.a,c.b)+'</div>'
+  +'<div class="mj-late">'+(c.done?('Selesai hari ini'+(c.done.grade&&GRADES[c.done.grade]?' · '+GRADES[c.done.grade].label:'')):('Purata ingatan '+Math.round(c.avgR*100)+'%'))+'</div></div>'
+  +'<div class="mj-r"><span class="mj-ret">'+(c.done?'✓':Math.round(c.minR*100)+'%')+'</span></div>';
+ if(!c.done)h+='<div class="mj-grades"><span class="gl">Nilai &amp; selesai:</span>'
+  +GRADE_ORDER.map(function(g){return '<button class="mj-gb" style="--gc:'+GRADES[g].color+'" data-action="mj-done" data-a="'+c.a+'" data-b="'+c.b+'" data-grade="'+g+'">'+GRADES[g].label+'</button>';}).join('')+'</div>';
+ return h+'</div>';
+}
 function mjTodayHTML(s,cfg,now){
  var an=mjAnalyse(s,now,cfg),thr=cfg.thr,h='';
  if(!an.memCount&&!an.inprog){
@@ -2988,26 +3047,18 @@ function mjTodayHTML(s,cfg,now){
  var lv=mjLevel(an);
  h+='<div style="display:flex;align-items:center;gap:8px;margin-top:14px"><span class="field-lbl" style="margin:0">Tahap murajaah</span><span class="mj-chip" style="background:'+lv.color+';color:#fff">'+lv.label+'</span></div>';
  h+=mjKpis(an);
- h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="refresh"></span> Jadual Murajaah Hari Ini</div><span class="mj-chip">Kapasiti '+cfg.cap+' m/s</span></div>';
- if(an.chunks.length){
-  h+=an.chunks.map(function(c){
-   var col=mjCol(c.minR,thr);
-   var late=c.maxOver>=1?('Tertunggak '+Math.round(c.maxOver)+' hari'):'Tiba masanya hari ini';
-   return '<div class="mj-row" style="--ac:'+col+'"><div class="mj-mid">'
-    +'<div class="mj-ms">'+mjRange(c.a,c.b)+' <span style="font-weight:700;color:var(--ink-2);font-size:11.5px">· '+c.n+' m/s</span></div>'
-    +'<div class="mj-sub">'+esc(surahLabel(c.a,c.b))+' · '+juzLabel(c.a,c.b)+'</div>'
-    +'<div class="mj-late">'+late+'</div></div>'
-    +'<div class="mj-r"><span class="mj-ret">'+Math.round(c.minR*100)+'%</span></div>'
-    +'<div class="mj-grades"><span class="gl">Nilai &amp; selesai:</span>'
-    +GRADE_ORDER.map(function(g){return '<button class="mj-gb" style="--gc:'+GRADES[g].color+'" data-action="mj-done" data-a="'+c.a+'" data-b="'+c.b+'" data-grade="'+g+'">'+GRADES[g].label+'</button>';}).join('')
-    +'</div></div>';
-  }).join('');
-  h+='<button class="btn btn-primary btn-block" data-action="mj-done-all" style="margin-top:4px">'+svg(ICONS.check,17)+' Tandakan Semua Selesai (tanpa penilaian)</button>';
-  if(an.backlog>0)h+='<div class="mj-mid2">Masih ada <b>'+an.backlog+' m/s</b> tertunggak melebihi kapasiti '+cfg.cap+' m/s sehari. Muka surat dengan ingatan paling rendah diutamakan; selebihnya akan muncul pada hari berikutnya.</div>';
- }else if(an.memCount){
-  h+='<div class="mj-good">Tiada murajaah tertunggak hari ini. Ingatan terjaga — teruskan hafazan baharu.</div>';
+ var dl=mjDaily(s,now,cfg);
+ h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="refresh"></span> Jadual Murajaah Hari Ini</div>'+(dl.T?'<span class="mj-chip">Tasmik terakhir M/S '+dl.T+' · Juz '+dl.tjuz+'</span>':'')+'</div>';
+ if(!dl.T){
+  h+='<div class="mj-mid2">Belum ada rekod <b>Tasmik</b>. Murajaah Baharu dan Lama dijadualkan berdasarkan muka surat Tasmik terakhir.</div>';
  }else{
-  h+='<div class="mj-mid2">Hanya Talaqqi direkod setakat ini. Muka surat dikira dihafaz selepas disahkan melalui <b>Tasmik</b>.</div>';
+  h+=mjDailyRow('baru',dl.baru,cfg,'Murajaah Baharu',cfg.baru+' m/s sebelum Tasmik terakhir (M/S '+dl.T+')',
+   'Tiada muka surat sebelum M/S '+dl.T+'.');
+  h+=mjDailyRow('lama',dl.lama,cfg,'Murajaah Lama',cfg.lama+' m/s berturutan daripada Juz 1'+(dl.poolJuz>1?'–'+dl.poolJuz:'')+' · dipilih ikut formula',
+   dl.tjuz<=1?'Tasmik masih dalam Juz 1 — belum ada juzuk sebelumnya untuk Murajaah Lama.':'Belum ada hafazan yang disahkan dalam juzuk sebelum Juz '+dl.tjuz+'.');
+  var pend=[dl.baru,dl.lama].filter(function(x){return x&&!x.done;});
+  if(pend.length)h+='<button class="btn btn-primary btn-block" data-action="mj-done-all" style="margin-top:4px">'+svg(ICONS.check,17)+' Tandakan Semua Selesai (tanpa penilaian)</button>';
+  else if(dl.baru||dl.lama)h+='<div class="mj-good">Murajaah hari ini selesai. Alhamdulillah.</div>';
  }
  h+='</div>';
  h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.layers,16)+' Peta Ingatan 604 Muka Surat</div><div class="mj-heat">'+mjHeat(an,cfg,now)+'</div>'+mjLegend(thr)+'</div>';
@@ -3022,14 +3073,18 @@ function mjTodayHTML(s,cfg,now){
   +'<p>Setiap muka surat mempunyai <b>kekuatan ingatan</b> R = e<sup>−t/S</sup> (keluk kelupaan Ebbinghaus), dengan <i>t</i> ialah hari sejak ulangan terakhir dan <i>S</i> ialah kestabilan ingatan.</p>'
   +'<ul><li><b>Tasmik</b> mengesahkan hafazan (S awal ≈ 4 hari). <b>Talaqqi</b> sahaja belum dikira dihafaz.</li>'
   +'<li>Setiap <b>Murajaah / Tasmik / Tahriri</b> menambah S. Ulangan ketika ingatan sudah menurun memberi kesan paling besar; jika sudah terlalu lupa (&lt;40%), kesan lebih kecil.</li>'
-  +'<li>Muka surat dijadualkan semula apabila ingatan mencecah <b>'+Math.round(thr*100)+'%</b> (selang paling lama 30 hari).</li>'
+  +'<li><b>Murajaah Baharu</b>: '+cfg.baru+' m/s setiap hari, betul-betul sebelum muka surat Tasmik terakhir.</li>'
+  +'<li><b>Murajaah Lama</b>: '+cfg.lama+' m/s berturutan setiap hari daripada juzuk sebelum juzuk Tasmik. Blok dipilih ikut formula — purata kekuatan ingatan paling rendah diutamakan, jadi blok bergilir dengan sendirinya.</li>'
+  +'<li>Peta ingatan menandakan muka surat yang perlu diulang apabila ingatan mencecah <b>'+Math.round(thr*100)+'%</b>.</li>'
   +'<li>Muka surat yang pertama kali direkod sebagai Murajaah/Tahriri dianggap hafazan lama.</li></ul>'
   +'<p><b>Mutu bacaan:</b> <i>Lancar</i> menambah kestabilan lebih besar; <i>Sederhana</i> (atau tiada penilaian) memberi kesan biasa; <i>Lemah</i> dianggap gagal ingat — kestabilan dikurangkan dan muka surat dijadualkan semula dengan cepat. Penilaian hanya untuk Talaqqi, Tasmik dan Murajaah.</p><p>Ini <b>anggaran</b> untuk membantu guru, bukan pengganti penilaian guru.</p></details>';
- var capOpts=[5,8,10,15,20,30].map(function(v){return '<option value="'+v+'"'+(v===cfg.cap?' selected':'')+'>'+v+' m/s</option>';}).join('');
+ var baruOpts=[1,2,3,4,5].map(function(v){return '<option value="'+v+'"'+(v===cfg.baru?' selected':'')+'>'+v+' m/s</option>';}).join('');
+ var lamaOpts=[3,4,5,6,8,10,15,20].map(function(v){return '<option value="'+v+'"'+(v===cfg.lama?' selected':'')+'>'+v+' m/s</option>';}).join('');
  var thrOpts=[60,70,80].map(function(v){return '<option value="'+v+'"'+(v===Math.round(cfg.thr*100)?' selected':'')+'>'+v+'%</option>';}).join('');
  h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.cog,16)+' Tetapan Jadual (Semua Pelajar)</div><div class="mj-set">'
-  +'<div><div class="field-lbl">Kapasiti sehari</div><select class="picker" id="mj-cap">'+capOpts+'</select></div>'
-  +'<div><div class="field-lbl">Ulang bila ingatan</div><select class="picker" id="mj-thr">'+thrOpts+'</select></div></div></div>';
+  +'<div><div class="field-lbl">Murajaah Baharu</div><select class="picker" id="mj-baru">'+baruOpts+'</select></div>'
+  +'<div><div class="field-lbl">Murajaah Lama</div><select class="picker" id="mj-lama">'+lamaOpts+'</select></div>'
+  +'<div style="grid-column:1/-1"><div class="field-lbl">Ulang bila ingatan (peta & keutamaan)</div><select class="picker" id="mj-thr">'+thrOpts+'</select></div></div></div>';
  return h;
 }
 
@@ -3087,26 +3142,31 @@ function mjKhatamHTML(s,cfg,now){
  // Beban murajaah
  var load=Math.round(an.load*10)/10,ratio=an.load/cfg.cap;
  h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.refresh,16)+' Beban Murajaah</div>'
-  +'<div class="mj-note" style="margin-top:0">Beban murajaah anggaran kini ialah kira-kira <b>'+load+' m/s sehari</b> (kapasiti ditetapkan '+cfg.cap+' m/s).</div>'
-  +(ratio>=1?'<div class="mj-warn">Beban melebihi kapasiti. Hafazan baharu yang terlalu laju akan menurunkan kualiti ingatan lama — kurangkan hafazan baharu atau naikkan masa murajaah.</div>'
+  +'<div class="mj-note" style="margin-top:0">Beban murajaah anggaran kini ialah kira-kira <b>'+load+' m/s sehari</b> (murajaah harian ditetapkan '+cfg.cap+' m/s: Baharu '+cfg.baru+' + Lama '+cfg.lama+').</div>'
+  +(ratio>=1?'<div class="mj-warn">Anggaran beban melebihi murajaah harian yang ditetapkan — sebahagian hafalan lama mungkin lemah sebelum sempat diulang. Pertimbangkan menambah Murajaah Lama di Tetapan Jadual.</div>'
    :(ratio>=0.8?'<div class="mj-mid2">Beban hampir penuh. Berhati-hati menambah hafazan baharu.</div>':''))
   +'</div>';
  h+='<div class="mj-note">Unjuran ialah <b>anggaran</b>: baki muka surat dikira daripada <b>M/S Tasmik terakhir</b> hingga M/S '+TOTAL_PAGES+', dibahagi kadar hafazan baharu '+Math.round(pr.spanDays)+' hari lepas (hari kalendar, bukan hari persekolahan). Andaian: hafazan berjalan menaik ke arah M/S '+TOTAL_PAGES+'. Muka surat yang mula-mula direkod sebagai Murajaah/Tahriri dianggap hafazan lama dan tidak dikira dalam kadar.</div>';
  return h;
 }
 
+function mjDailyMeta(dl){
+ var f=function(lbl,c){if(!c)return '';return '<span style="color:'+(c.done?'var(--ok-ink)':'inherit')+'">'+lbl+' '+mjRange(c.a,c.b).replace('M/S ','')+(c.done?' ✓':'')+'</span>';};
+ return f('Baharu',dl.baru)+f('Lama',dl.lama);
+}
 function mjClassHTML(cfg,now){
  var rows=state.students.map(function(s){
-  var an=mjAnalyse(s,now,cfg),pr=mjProject(s,now,cfg,an);
-  return {s:s,an:an,pr:pr};
- }).sort(function(a,b){return b.an.due-a.an.due||b.an.crit-a.an.crit;});
- var nDue=rows.filter(function(r){return r.an.due>0;}).length;
- var tot=rows.reduce(function(t,r){return t+r.an.due;},0);
+  var an=mjAnalyse(s,now,cfg),pr=mjProject(s,now,cfg,an),dl=mjDaily(s,now,cfg);
+  var left=0;[dl.baru,dl.lama].forEach(function(c){if(c&&!c.done)left+=c.n;});
+  return {s:s,an:an,pr:pr,dl:dl,left:left};
+ }).sort(function(a,b){return b.left-a.left||b.an.crit-a.an.crit;});
+ var nDue=rows.filter(function(r){return r.left>0;}).length;
+ var tot=rows.reduce(function(t,r){return t+r.left;},0);
  var avg=rows.length?Math.round(rows.reduce(function(t,r){return t+r.an.memCount;},0)/rows.length):0;
  var h='<div class="kpi-grid">'
-  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.murajaah)+';color:'+PC.murajaah+'">'+svg(ICONS.users,16)+'</div><div class="k-v">'+nDue+' <small>pelajar</small></div><div class="k-l">Ada murajaah tertunggak</div></div>'
+  +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.murajaah)+';color:'+PC.murajaah+'">'+svg(ICONS.users,16)+'</div><div class="k-v">'+nDue+' <small>pelajar</small></div><div class="k-l">Belum selesai murajaah hari ini</div></div>'
   +'<div class="kpi"><div class="k-ic" style="background:'+tint(PC.hafazan)+';color:'+PC.hafazan+'">'+svg(ICONS.book,16)+'</div><div class="k-v">'+avg+' <small>m/s</small></div><div class="k-l">Purata dihafaz / pelajar</div></div></div>';
- h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="users"></span> Semua Pelajar</div><span class="mj-chip">'+tot+' m/s perlu diulang</span></div>';
+ h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="users"></span> Semua Pelajar</div><span class="mj-chip">'+tot+' m/s belum diulang hari ini</span></div>';
  h+=rows.map(function(r){
   var s=r.s,an=r.an,pr=r.pr;
   var kh=pr.done?'Khatam':(pr.dates?mjDateTxt(pr.dates.cur,now):'—');
@@ -3115,11 +3175,11 @@ function mjClassHTML(cfg,now){
   return '<button class="stud" data-action="mj-open" data-id="'+s.id+'">'
    +'<div class="st-av" style="background:'+avatarColor(s.id)+'">'+esc(initials(s.name))+'</div>'
    +'<div class="st-mid"><div class="st-n">'+esc(s.name)+'</div>'
-   +'<div class="st-meta"><span>'+(pr.pos?('M/S '+pr.pos+' ('+Math.round(pr.pct)+'%)'):'Belum Tasmik')+'</span><span>Ulang: '+an.due+'</span>'+(an.crit?'<span style="color:#e5484d">Kritikal: '+an.crit+'</span>':'')+'</div>'
+   +'<div class="st-meta"><span>'+(pr.pos?('M/S '+pr.pos+' ('+Math.round(pr.pct)+'%)'):'Belum Tasmik')+'</span>'+mjDailyMeta(r.dl)+(an.crit?'<span style="color:#e5484d">Kritikal: '+an.crit+'</span>':'')+'</div>'
    +'<div class="mj-stud-bar"><div style="width:'+Math.max(1,Math.min(100,pr.pct))+'%"></div></div></div>'
    +'<div class="st-r" style="text-align:right"><span class="mj-chip">'+esc(kh)+st+'</span></div></button>';
  }).join('')||'<div class="empty"><div class="e-t">Belum ada pelajar</div></div>';
- h+='</div><div class="mj-note">Disusun mengikut jumlah murajaah tertunggak. Tekan pelajar untuk lihat jadual dan unjuran khatam. Tarikh pada hujung baris ialah anggaran khatam';
+ h+='</div><div class="mj-note">Disusun mengikut murajaah hari ini yang belum selesai (Baharu + Lama). Tekan pelajar untuk lihat jadual dan unjuran khatam. Tarikh pada hujung baris ialah anggaran khatam';
  h+=cfg.khatam?(' (✓ menepati sasaran, ! di belakang sasaran '+mjDate(new Date(cfg.khatam+'T00:00:00').getTime())+').'):'.';
  h+='</div>';
  return h;
@@ -3151,25 +3211,27 @@ function renderMurajaah(){
 
 function mjDone(a,b,grade){
  var s=mjStudent();if(!s||!(a>=1)||!(b>=a))return;
- addRecord(s,{phase:'murajaah',start:a,end:b,note:'Murajaah pintar',grade:grade||''});
+ var dl0=mjDaily(s,Date.now(),mjCfg());
+ addRecord(s,{phase:'murajaah',start:a,end:b,note:(dl0.baru&&dl0.baru.a===a&&dl0.baru.b===b)?'Murajaah baharu':(dl0.lama&&dl0.lama.a===a&&dl0.lama.b===b)?'Murajaah lama':'Murajaah pintar',grade:grade||''});
  toast('Murajaah '+mjRange(a,b)+(grade&&GRADES[grade]?(' ('+GRADES[grade].label+')'):'')+' direkod untuk '+s.name.split(' ')[0]+'.',true);
  renderMurajaah();
 }
 function mjDoneAll(){
  var s=mjStudent();if(!s)return;
- var an=mjAnalyse(s,Date.now(),mjCfg());
- if(!an.chunks.length)return;
- if(!confirm('Rekodkan '+an.sel+' m/s sebagai Murajaah untuk '+s.name+'?'))return;
- an.chunks.forEach(function(c){addRecord(s,{phase:'murajaah',start:c.a,end:c.b,note:'Murajaah pintar'});});
- toast('Semua murajaah hari ini direkod ('+an.sel+' m/s).',true);
+ var dl=mjDaily(s,Date.now(),mjCfg()),L=[dl.baru,dl.lama].filter(function(x){return x&&!x.done;});
+ if(!L.length)return;
+ var n=L.reduce(function(t,c){return t+c.n;},0);
+ if(!confirm('Rekodkan '+L.map(function(c){return mjRange(c.a,c.b);}).join(' dan ')+' sebagai Murajaah untuk '+s.name+'?'))return;
+ L.forEach(function(c){addRecord(s,{phase:'murajaah',start:c.a,end:c.b,note:(c===dl.baru?'Murajaah baharu':'Murajaah lama')});});
+ toast('Murajaah hari ini direkod ('+n+' m/s).',true);
  renderMurajaah();
 }
 document.addEventListener('change',function(e){
  var t=e.target;if(!t||!t.id)return;
  if(t.id==='mj-student'){mjSel=t.value;renderMurajaah();}
- else if(t.id==='mj-cap'||t.id==='mj-thr'){
+ else if(t.id==='mj-baru'||t.id==='mj-lama'||t.id==='mj-thr'){
   state.mur=Object.assign({cap:10,thr:70,khatam:''},state.mur||{});
-  if(t.id==='mj-cap')state.mur.cap=+t.value;else state.mur.thr=+t.value;
+  if(t.id==='mj-baru')state.mur.baru=+t.value;else if(t.id==='mj-lama')state.mur.lama=+t.value;else state.mur.thr=+t.value;
   saveState();renderMurajaah();
  }else if(t.id==='mj-target'){
   state.mur=Object.assign({cap:10,thr:70,khatam:''},state.mur||{});
@@ -4097,9 +4159,10 @@ function hqSuggest(s,ph,an){
  var T=hqLast(s,'tasmik'),Lr=hqLearned(s);
  if(ph===ATT_KEY)return {a:null,why:'Pilih status kehadiran'};
  if(ph==='murajaah'){
-  var c=an.chunks[0];
-  if(c)return {a:c.a,b:Math.min(c.b,c.a+4),why:'Tertunggak · ingatan '+Math.round(c.minR*100)+'%'};
-  return {a:null,why:'Tiada yang tertunggak — isi muka surat'};
+  var dl=mjDaily(s,Date.now(),mjCfg());
+  if(dl.baru&&!dl.baru.done)return {a:dl.baru.a,b:dl.baru.b,why:'Murajaah Baharu · sebelum Tasmik M/S '+dl.T};
+  if(dl.lama&&!dl.lama.done)return {a:dl.lama.a,b:dl.lama.b,why:'Murajaah Lama · purata ingatan '+Math.round(dl.lama.avgR*100)+'%'};
+  return {a:null,why:(dl.baru||dl.lama)?'Murajaah hari ini sudah selesai':'Belum ada Tasmik — isi muka surat'};
  }
  if(ph==='tasmik'){
   if(Lr&&(!T||Lr.end>T.end)){var a=Math.max(T?T.end+1:1,Lr.start|0),b=Math.min(Lr.end|0,a+4);return {a:a,b:b,why:'Talaqqi '+mjRange(a,Lr.end|0)+' belum ditasmik'};}
@@ -4115,9 +4178,9 @@ function hqSuggest(s,ph,an){
 }
 function hqDefaultPhase(s,an){
  var T=hqLast(s,'tasmik'),Lr=hqLearned(s);
- if(an.chunks.length&&an.chunks[0].minR<0.5)return 'murajaah';
  if(Lr&&(!T||Lr.end>T.end))return 'tasmik';
- if(an.chunks.length)return 'murajaah';
+ var dl=mjDaily(s,Date.now(),mjCfg());
+ if((dl.baru&&!dl.baru.done)||(dl.lama&&!dl.lama.done))return 'murajaah';
  return 'talaqqi';
 }
 function hqToday(s){ // rekod / kehadiran hari ini (dari data sebenar)
@@ -4282,7 +4345,8 @@ function rumahParentHTML(){
  var an=mjAnalyse(s,now,cfg,{beforeDay:today});
  var mine=rumahOf(s).filter(function(e){return e.d===today;})[0]||null;
  if(!rhDraft||rhDraft.sid!==s.id||rhDraft.d!==today){
-  var items=mine?mine.items.map(function(x){return [x[0],x[1],x[2]?1:0];}):an.chunks.map(function(c){return [c.a,c.b,0];});
+  var dly=mjDaily(s,now,cfg);
+  var items=mine?mine.items.map(function(x){return [x[0],x[1],x[2]?1:0];}):[dly.baru,dly.lama].filter(Boolean).map(function(c){return [c.a,c.b,0];});
   rhDraft={sid:s.id,d:today,items:items,rating:mine?mine.rating:'',note:mine?mine.note:'',busy:false,msg:''};
  }
  var D=rhDraft,first=esc(String(s.name||'').split(' ')[0]);
@@ -4294,7 +4358,7 @@ function rumahParentHTML(){
   return h+'<div class="mj-good" style="margin-top:0">Tiada murajaah dijadualkan hari ini — ingatan '+first+' masih kukuh. Galakkan '+first+' mengulang hafazan terkini.</div>'+rhHistHTML(s)+'</div>';
  }
  var tot=0,dn=0;D.items.forEach(function(it){var n=it[1]-it[0]+1;tot+=n;if(it[2])dn+=n;});
- h+='<div class="rh-sub">Senarai daripada Murajaah Pintar: muka surat yang paling perlu diulang oleh '+first+' hari ini. Tanda selepas '+first+' membaca kepada anda.</div>';
+ h+='<div class="rh-sub">Murajaah Baharu (sebelum Tasmik terakhir) dan Murajaah Lama (juzuk sebelumnya) untuk '+first+' hari ini. Tanda selepas '+first+' membaca kepada anda.</div>';
  h+='<div class="rh-prog"><span>Selesai</span><b>'+dn+' / '+tot+' m/s</b></div><div class="mj-bar"><div style="width:'+Math.max(1,Math.round(dn/tot*100))+'%"></div></div>';
  h+=D.items.map(function(it,i){
   var R=rhRetOf(an,it[0],it[1],now);
