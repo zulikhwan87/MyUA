@@ -3871,7 +3871,12 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;show();});
  window.addEventListener('appinstalled',function(){dp=null;hide();});
  if(go)go.addEventListener('click',function(){
-  if(go.getAttribute('data-copy')){try{navigator.clipboard.writeText(location.href);go.textContent='Disalin ✓';}catch(e){}return;}
+  if(go.getAttribute('data-copy')){
+   var url=location.origin+location.pathname,done=function(){go.textContent='Disalin ✓';};
+   var fallback=function(){var t=document.createElement('textarea');t.value=url;t.setAttribute('readonly','');t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();t.setSelectionRange(0,url.length);try{document.execCommand('copy');done();}catch(e){prompt('Salin pautan ini:',url);}document.body.removeChild(t);};
+   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,fallback);else fallback();
+   return;
+  }
   if(dp){dp.prompt();dp.userChoice.then(function(){dp=null;hide();});}
   else hide();
  });
@@ -3901,8 +3906,20 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
   },2500);
  }
  if(ios&&!standalone){
-  tx.innerHTML='<b>Pasang MyUA</b>Tekan butang <b style="display:inline;font-size:inherit">Kongsi</b> (⬆︎) di Safari, kemudian <b style="display:inline;font-size:inherit">Tambah ke Skrin Utama</b>.';
-  go.style.display='none';setTimeout(show,1200);
+  var B=function(t){return '<b style="display:inline;font-size:inherit">'+t+'</b>';};
+  var iosInApp=/FBAN|FBAV|Instagram|Line\/|MicroMessenger|Telegram|GSA\/|WhatsApp/i.test(ua);
+  var iosOther=/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
+  if(iosInApp){
+   tx.innerHTML='<b>Buka dalam Safari</b>Tekan '+B('⋯')+' / ikon '+B('kompas')+' → '+B('Buka dalam Safari')+', kemudian pasang dari situ.';
+   go.textContent='Salin';go.setAttribute('data-copy','1');
+  }else if(iosOther){
+   tx.innerHTML='<b>Pasang MyUA</b>Tekan '+B('Kongsi')+' (⬆︎) → '+B('Tambah ke Skrin Utama')+'. Jika tiada, buka dalam Safari.';
+   go.textContent='Salin';go.setAttribute('data-copy','1');
+  }else{
+   tx.innerHTML='<b>Pasang MyUA</b>Tekan '+B('Kongsi')+' (⬆︎) di Safari → '+B('Tambah ke Skrin Utama')+'.<span style="display:block;margin-top:3px;opacity:.8">Dari WhatsApp? Tekan ikon '+B('kompas')+' dahulu.</span>';
+   go.style.display='none';
+  }
+  setTimeout(show,1200);
  }
 })();
 
