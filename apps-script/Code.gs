@@ -178,7 +178,8 @@ function parentLogin_(body) {
       comments: cm,
       // pelajar lain & maklumat akaun ibu bapa sengaja TIDAK dihantar
       student: { id: s.id, no: s.no, name: s.name, tingkatan: s.tingkatan,
-                 records: s.records || [], attendance: s.attendance || [] },
+                 records: s.records || [], attendance: s.attendance || [],
+                 khatam: s.khatam || null, lamaJuz: s.lamaJuz || null },
       rumah: rumahRead_(function (e) { return e.guruId === x.r.guruId && e.sid === s.id && e.d >= since; })
     };
   });
