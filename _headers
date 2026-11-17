@@ -1,0 +1,25 @@
+# Cloudflare Pages — pengepala HTTP untuk MyUA
+# (GitHub Pages mengabaikan fail ini)
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
+
+# Halaman app & service worker: sentiasa semak versi terkini supaya kemas kini sampai segera
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.json
+  Content-Type: application/manifest+json
+  Cache-Control: public, max-age=3600
+
+/*.png
+  Cache-Control: public, max-age=604800
+
+/apps-script/*
+  X-Robots-Tag: noindex
