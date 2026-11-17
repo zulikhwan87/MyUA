@@ -49,7 +49,7 @@ function doGet(e) {
     if (String(p.key || '') !== ADMIN_KEY) return out({ ok: false, error: 'unauthorized' });
     return out({ ok: true, rows: readAllRows() });
   }
-  if (action === 'version') return out({ ok: true, parentLogin: true, rumah: true });   // semakan pantas versi deploy
+  if (action === 'version') return out({ ok: true, parentLogin: true, rumah: true, rumahAll: true });   // semakan pantas versi deploy
   return out({ ok: false, error: 'unknown action' });
 }
 
@@ -63,6 +63,13 @@ function doPost(e) {
 
     /* ----- GURU: baca murajaah rumah kelas sendiri ----- */
     if (body.action === 'rumahLoad') return out(rumahLoad_(body));
+
+    /* ----- PENYELARAS: baca murajaah rumah semua guru (kod dalam body, bukan URL) ----- */
+    if (body.action === 'rumahLoadAll') {
+      if (String(body.key || '') !== ADMIN_KEY) return out({ ok: false, error: 'unauthorized' });
+      var sinceAll = daysAgoKey_(RUMAH_DAYS);
+      return out({ ok: true, entries: rumahRead_(function (e) { return e.d >= sinceAll; }, true) });
+    }
 
     /* ----- LOG MASUK / DAFTAR (GURU) ----- */
     if (body.action === 'login') {
@@ -238,7 +245,7 @@ function rumahSheet_() {
   }
   return sh;
 }
-function rumahRead_(filterFn) {
+function rumahRead_(filterFn, keepGuruId) {
   var sh = ss().getSheetByName(RUMAH_SHEET);
   if (!sh || sh.getLastRow() < 2) return [];
   var tz = ss().getSpreadsheetTimeZone();
@@ -259,7 +266,7 @@ function rumahRead_(filterFn) {
       items: []
     };
     try { e.items = JSON.parse(v[R_ITEMS - 1] || '[]'); } catch (err) {}
-    if (e.sid && filterFn(e)) { delete e.guruId; res.push(e); }
+    if (e.sid && filterFn(e)) { if (!keepGuruId) delete e.guruId; res.push(e); }
   });
   return res;
 }
