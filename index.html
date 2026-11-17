@@ -673,6 +673,34 @@ body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.par
 .actf.on{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:var(--sh-sm)}
 .actf.on small{background:rgba(255,255,255,.25);color:#fff}
 
+/* ---- Penyelaras: Terbaik ---- */
+.mode-toggle.c4{display:grid;grid-template-columns:1fr 1fr}
+.ctb-ctl .picker{margin-bottom:8px}
+.ctb-tk{padding-bottom:10px}
+.ctb-champs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px}
+.ctb-champ{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;padding:11px 12px;border-radius:var(--r);background:var(--card);border:1.5px solid var(--line);box-shadow:var(--sh-sm);min-width:0}
+.ctb-champ.on{border-color:var(--ac);box-shadow:0 0 0 2px color-mix(in srgb,var(--ac) 25%,transparent)}
+.ctb-champ .ctb-ph{font-size:11.5px;font-weight:900;color:#fff;background:var(--ac);padding:2px 9px;border-radius:99px;margin-bottom:4px}
+.ctb-champ b{font-size:13.5px;font-weight:900;color:var(--ink);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctb-champ b.none{color:var(--ink-3)}
+.ctb-champ small{font-size:12px;font-weight:700;color:var(--ink-2)}
+.ctb-list{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:4px 12px}
+.ctb-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.ctb-row:last-child{border-bottom:none}
+.ctb-med,.ctb-rk{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-size:12.5px;font-weight:900;flex:none}
+.ctb-rk{color:var(--ink-3)}
+.ctb-med.m1{background:linear-gradient(135deg,#eecb66,#c9a24b);color:#5a3d00}
+.ctb-med.m2{background:linear-gradient(135deg,#e3e8ee,#b9c4d0);color:#39424d}
+.ctb-med.m3{background:linear-gradient(135deg,#f0b98a,#cf8952);color:#4a2c10}
+.ctb-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ctb-mid b{font-size:13.5px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctb-mid small{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctb-mid .rk-bar{height:7px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:3px}
+.ctb-mid .rk-fill{height:100%;border-radius:99px}
+.ctb-val{text-align:right;flex:none;display:flex;flex-direction:column}
+.ctb-val b{font-size:16px;font-weight:900;color:var(--ink);line-height:1.1}
+.ctb-val small{font-size:11.5px;font-weight:700;color:var(--ink-3)}
+.ctb-val .ctb-q{color:var(--ok-ink)}
 /* ---- Murajaah harian ---- */
 .mjd-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 7px}
 .mjd-tag{font-size:12px;font-weight:900;padding:3px 10px;border-radius:99px;color:#fff}
@@ -2506,7 +2534,7 @@ function scheduleCloudPush(){
    PAPAN PENYELARAS — himpun & analisis data semua guru (perlu Kod)
    ================================================================= */
 var coordData=[], coordLoadedAt=0, coordBusy=false;
-var coordMode='ringkasan';   /* 'ringkasan' | 'keseluruhan' | 'guru' */
+var coordMode='ringkasan';   /* 'ringkasan' | 'keseluruhan' | 'guru' | 'terbaik' */
 var coordSelGuruId='';
 
 function ptsOfMap(map,phase){var p=map&&map[phase];return (typeof p==='number')?p:(PHASES[phase]?PHASES[phase].pts:0);}
@@ -2540,14 +2568,82 @@ function coordStat(icon,col,val,lbl){return '<div class="stat"><div class="s-ic"
 function coordPhaseBreak(recs){var byPhase={},cnt={};PHASE_ORDER.forEach(function(k){byPhase[k]=0;cnt[k]=0;});recs.forEach(function(r){if(byPhase[r.phase]!=null){byPhase[r.phase]+=r.mata;cnt[r.phase]++;}});var maxP=1;PHASE_ORDER.forEach(function(k){if(byPhase[k]>maxP)maxP=byPhase[k];});return PHASE_ORDER.map(function(k){var w=Math.round(byPhase[k]/maxP*100);return '<div class="brk-item" style="--ac:'+PC[k]+'"><div class="brk-top"><div class="brk-name"><span class="d"></span>'+PHASES[k].label+'</div><div class="brk-val">'+cnt[k]+' rekod · '+byPhase[k]+' mata</div></div><div class="brk-bar"><div class="brk-fill" style="width:'+w+'%"></div></div></div>';}).join('');}
 function coordRankHTML(list,showGuru,limit){var arr=list.slice().sort(function(a,b){return b.mata-a.mata;});if(limit)arr=arr.slice(0,limit);var max=1;arr.forEach(function(s){if(s.mata>max)max=s.mata;});return arr.map(function(s,i){var w=Math.round(s.mata/max*100);return '<div class="rankrow"><div class="rk-i">'+(i+1)+'</div><div class="rk-n">'+esc(s.name)+(showGuru?(' <span style="color:var(--ink-3);font-weight:600">· '+esc(s.guru)+'</span>'):'')+'</div><div class="rk-bar"><div class="rk-fill" style="width:'+Math.max(2,w)+'%"></div></div><div class="rk-v">'+s.mata+'</div></div>';}).join('')||'<div style="text-align:center;color:var(--ink-3);font-size:12px;padding:12px">Belum ada pelajar.</div>';}
 
+
+/* ---- Penyelaras: Pelajar Terbaik ikut fasa (keseluruhan / bulanan, tapis tingkatan) ----
+ * Ukuran: jumlah muka surat dalam fasa itu; seri dipecahkan oleh bilangan bacaan Lancar,
+ * kemudian peratus Lancar (fasa bernilai sahaja: Talaqqi, Tasmik, Murajaah). Tahriri ikut muka surat. */
+var ctbPhase='tasmik',ctbYm='',ctbTk='semua',ctbAll=false;
+function ctbStudents(){
+ var out=[];
+ coordData.forEach(function(e){var d=e.data||{};(d.students||[]).forEach(function(s){
+  var t=parseInt(s.tingkatan,10);
+  out.push({s:s,guru:e.guruName||e.guruId,kelas:(d.klass&&d.klass.name)||e.namaKelas||'',tk:(t>=1&&t<=5)?String(t):'0'});
+ });});
+ return out;
+}
+function ctbMonths(){
+ var m={};coordData.forEach(function(e){((e.data||{}).students||[]).forEach(function(s){(s.records||[]).forEach(function(r){if(r&&r.ts)m[ymOf(r.ts)]=1;});});});
+ return Object.keys(m).sort().reverse();
+}
+function ctbRank(phase,ym,tk){
+ return ctbStudents().filter(function(x){return tk==='semua'||x.tk===tk;}).map(function(x){
+  var pg=0,n=0,lan=0,graded=0;
+  (x.s.records||[]).forEach(function(r){
+   if(!r||r.phase!==phase||!r.ts)return;
+   if(ym&&ymOf(r.ts)!==ym)return;
+   n++;pg+=Math.max(1,(r.end|0)-(r.start|0)+1);
+   if(r.grade&&GRADES[r.grade]){graded++;if(r.grade==='lancar')lan++;}
+  });
+  return {x:x,pages:pg,recs:n,lan:lan,graded:graded,pct:graded?lan/graded:null};
+ }).filter(function(r){return r.pages>0;}).sort(function(a,b){
+  return b.pages-a.pages||b.lan-a.lan||((b.pct||0)-(a.pct||0))||String(a.x.s.name).localeCompare(String(b.x.s.name));
+ });
+}
+function coordTerbaikHTML(){
+ if(!coordData.length)return '<div class="empty" style="margin-top:14px"><div class="e-t">Belum ada data</div><div class="e-s">Tekan Segar Semula untuk memuat data semua guru.</div></div>';
+ var months=ctbMonths();if(ctbYm&&months.indexOf(ctbYm)<0)ctbYm='';
+ var tks={};ctbStudents().forEach(function(x){tks[x.tk]=1;});
+ var tkKeys=Object.keys(tks).sort(function(a,b){return (a==='0')-(b==='0')||a-b;});
+ if(ctbTk!=='semua'&&!tks[ctbTk])ctbTk='semua';
+ var perLbl=ctbYm?ymLabel(ctbYm):'Keseluruhan';
+ var h='<div class="ctb-ctl">'
+  +'<select class="picker" id="ctb-ym" aria-label="Tempoh">'+'<option value="">Keseluruhan (semua bulan)</option>'+months.map(function(m){return '<option value="'+m+'"'+(m===ctbYm?' selected':'')+'>'+ymLabel(m)+'</option>';}).join('')+'</select>'
+  +'<div class="hq-tabs ctb-tk">'+['semua'].concat(tkKeys).map(function(k){return '<button class="hq-tab'+(k===ctbTk?' on':'')+'" data-action="ctb-tk" data-tk="'+k+'">'+(k==='semua'?'Semua tingkatan':hqTkLabel(k))+'</button>';}).join('')+'</div></div>';
+ // Juara setiap fasa
+ h+='<div class="sec-head" style="margin-top:4px"><div class="sec-title">'+svg(ICONS.trophy,16)+' Terbaik setiap fasa · '+esc(perLbl)+'</div></div><div class="ctb-champs">'
+  +PHASE_ORDER.map(function(ph){
+   var top=ctbRank(ph,ctbYm,ctbTk)[0];
+   return '<button class="ctb-champ'+(ph===ctbPhase?' on':'')+'" style="--ac:'+PC[ph]+'" data-action="ctb-phase" data-ph="'+ph+'">'
+    +'<span class="ctb-ph">'+PHASES[ph].short+'</span>'
+    +(top?'<b>'+esc(top.x.s.name)+'</b><small>'+top.pages+' m/s'+(top.pct!=null?' · '+Math.round(top.pct*100)+'% Lancar':'')+'</small>':'<b class="none">—</b><small>Tiada rekod</small>')
+    +'</button>';
+  }).join('')+'</div>';
+ // Ranking penuh fasa dipilih
+ var R=ctbRank(ctbPhase,ctbYm,ctbTk),max=R.length?R[0].pages:1,lim=ctbAll?R.length:15;
+ h+='<div class="section"><div class="sec-head"><div class="sec-title" style="color:'+PC[ctbPhase]+'">'+svg(ICONS.medal,16)+' Ranking '+PHASES[ctbPhase].label+'</div><span class="mj-chip">'+R.length+' pelajar</span></div>';
+ if(!R.length)h+='<div class="mj-note">Tiada rekod '+PHASES[ctbPhase].label+' bagi '+esc(perLbl.toLowerCase()==='keseluruhan'?'semua tempoh':perLbl)+(ctbTk!=='semua'?' · '+hqTkLabel(ctbTk):'')+'.</div>';
+ else{
+  h+='<div class="ctb-list">'+R.slice(0,lim).map(function(r,i){
+   var med=i<3?'<span class="ctb-med m'+(i+1)+'">'+(i+1)+'</span>':'<span class="ctb-rk">'+(i+1)+'</span>';
+   var w=Math.max(3,Math.round(r.pages/max*100));
+   return '<div class="ctb-row">'+med+'<div class="ctb-mid"><b>'+esc(r.x.s.name)+'</b>'
+    +'<small>'+esc(r.x.guru)+(r.x.kelas?' · '+esc(r.x.kelas):'')+(r.x.tk!=='0'?' · T'+r.x.tk:'')+'</small>'
+    +'<div class="rk-bar"><div class="rk-fill" style="width:'+w+'%;background:'+PC[ctbPhase]+'"></div></div></div>'
+    +'<div class="ctb-val"><b>'+r.pages+'</b><small>m/s · '+r.recs+' rekod</small>'+(r.pct!=null?'<small class="ctb-q">'+Math.round(r.pct*100)+'% Lancar</small>':'')+'</div></div>';
+  }).join('')+'</div>';
+  if(R.length>15)h+='<button class="btn btn-line btn-block sm" data-action="ctb-all" style="margin-top:8px">'+(ctbAll?'Tunjuk 15 teratas sahaja':'Tunjuk semua '+R.length+' pelajar')+'</button>';
+ }
+ h+='</div><div class="mj-note">Disusun ikut jumlah muka surat dalam fasa '+PHASES[ctbPhase].label+(ctbYm?' bagi '+ymLabel(ctbYm):' bagi semua tempoh')+'. Jika sama, pelajar dengan lebih banyak bacaan <b>Lancar</b> didahulukan'+(GRADED[ctbPhase]?'':' (Tahriri tiada penilaian mutu)')+'. Kehadiran tidak dikira.</div>';
+ return h;
+}
 function renderPenyelaras(){
  var head='<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="tetapan"><span data-ic="back"></span></button><div class="hero-title">PAPAN PENYELARAS</div><button class="hero-back" data-action="coord-refresh" aria-label="Segar semula">'+svg(ICONS.refresh,18)+'</button></div><div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">Pantau semua guru & pelajar</div></div></div>';
  var host=document.getElementById('s-penyelaras');
  if(!coordReady()){host.innerHTML=head+'<div class="pad" style="padding-top:18px"><div class="card p" style="text-align:center"><div style="font-weight:800;margin-bottom:6px">Belum bersedia</div><div style="font-size:12.5px;color:var(--ink-2)">Sila log masuk sebagai Penyelaras (Pautan + Kod Penyelaras).</div><button class="btn btn-primary sm" data-action="logout" style="margin-top:12px">'+svg(ICONS.cloud,15)+' Ke Log Masuk</button></div></div>';paintIcons(host);return;}
  var loaded=coordLoadedAt?('Dikemas kini '+fmtTime(coordLoadedAt)):'Sedia';
  var bar='<div class="coord-bar"><span class="sync-badge ok" id="coord-status">'+esc(loaded)+'</span><button class="btn btn-line sm" data-action="coord-refresh">'+svg(ICONS.refresh,15)+' Segar Semula</button></div>';
- var toggle='<div class="mode-toggle"><button class="'+(coordMode==='ringkasan'?'on':'')+'" data-cmode="ringkasan">'+svg(ICONS.users,15)+' Ringkasan</button><button class="'+(coordMode==='keseluruhan'?'on':'')+'" data-cmode="keseluruhan">'+svg(ICONS.chart,15)+' Keseluruhan</button><button class="'+(coordMode==='guru'?'on':'')+'" data-cmode="guru">'+svg(ICONS.teacher,15)+' Ikut Guru</button></div>';
- var body=(coordMode==='keseluruhan')?coordKeseluruhanHTML():(coordMode==='guru')?coordGuruHTML():coordRingkasanHTML();
+ var toggle='<div class="mode-toggle c4"><button class="'+(coordMode==='ringkasan'?'on':'')+'" data-cmode="ringkasan">'+svg(ICONS.users,15)+' Ringkasan</button><button class="'+(coordMode==='keseluruhan'?'on':'')+'" data-cmode="keseluruhan">'+svg(ICONS.chart,15)+' Keseluruhan</button><button class="'+(coordMode==='guru'?'on':'')+'" data-cmode="guru">'+svg(ICONS.teacher,15)+' Ikut Guru</button><button class="'+(coordMode==='terbaik'?'on':'')+'" data-cmode="terbaik">'+svg(ICONS.trophy,15)+' Terbaik</button></div>';
+ var body=(coordMode==='terbaik')?coordTerbaikHTML():(coordMode==='keseluruhan')?coordKeseluruhanHTML():(coordMode==='guru')?coordGuruHTML():coordRingkasanHTML();
  host.innerHTML=head+'<div class="pad" style="padding-top:16px">'+bar+toggle+body+'</div>';
  paintIcons(host);
 }
@@ -3229,6 +3325,7 @@ function mjDoneAll(){
 document.addEventListener('change',function(e){
  var t=e.target;if(!t||!t.id)return;
  if(t.id==='mj-student'){mjSel=t.value;renderMurajaah();}
+ else if(t.id==='ctb-ym'){ctbYm=t.value;ctbAll=false;renderPenyelaras();}
  else if(t.id==='mj-baru'||t.id==='mj-lama'||t.id==='mj-thr'){
   state.mur=Object.assign({cap:10,thr:70,khatam:''},state.mur||{});
   if(t.id==='mj-baru')state.mur.baru=+t.value;else if(t.id==='mj-lama')state.mur.lama=+t.value;else state.mur.thr=+t.value;
@@ -4011,6 +4108,9 @@ document.addEventListener('click',function(e){
   case 'rep-mode':setRepMode(el.getAttribute('data-mode'));break;
   case 'rep-prev':stepRepMonth(-1);break;
   case 'rep-next':stepRepMonth(1);break;
+  case 'ctb-phase':ctbPhase=el.getAttribute('data-ph');ctbAll=false;renderPenyelaras();break;
+  case 'ctb-tk':ctbTk=el.getAttribute('data-tk');ctbAll=false;renderPenyelaras();break;
+  case 'ctb-all':ctbAll=!ctbAll;renderPenyelaras();break;
   case 'hq-tab':hqTk=el.getAttribute('data-tk');hqOpen=null;renderHalaqah();break;
   case 'hq-open':hqToggle(el.getAttribute('data-id'));break;
   case 'hq-phase':hqSetPhase(el.getAttribute('data-id'),el.getAttribute('data-ph'));break;
