@@ -2420,7 +2420,7 @@ function doLogin(){
   var key=document.getElementById('lg-key').value.trim();
   if(!key){lgErr('Sila isi Kod Penyelaras.');return;}
   cloudCfg.adminKey=key;saveCloudCfg();busy('Menyemak…');
-  fetch(cloudCfg.url+'?action=loadAll&key='+encodeURIComponent(key)+'&t='+Date.now())
+  coordLoadReq(key)
    .then(function(r){return r.json();}).then(function(res){
     done();
     if(res&&res.ok&&Array.isArray(res.rows)){coordData=res.rows;coordLoadedAt=Date.now();cloudCfg.loggedIn=true;saveCloudCfg();appReady=true;enterApp();return;}
@@ -2517,15 +2517,27 @@ function cloudPush(silent){
   .then(function(r){return r.json();}).then(function(res){
    cloudBusy=false;
    if(res&&res.ok){cloudCfg.lastSync=Date.now();saveCloudCfg();setSyncBadge('Tersimpan di Sheet '+fmtTime(cloudCfg.lastSync),'ok');if(!silent)toast('Data disimpan ke Google Sheet.',true);return true;}
-   setSyncBadge('Gagal menyimpan','err');if(!silent)toast('Gagal simpan ke Sheet.',false);return false;
+   if(res&&res.error==='busy'){setTimeout(function(){cloudPush(true);},6000);setSyncBadge('Pelayan sibuk — cuba semula…','pending');return false;}
+   setSyncBadge(res&&res.error==='wrong-pin'?'Kata laluan tidak sepadan':'Gagal menyimpan','err');if(!silent)toast('Gagal simpan ke Sheet.',false);return false;
   }).catch(function(){cloudBusy=false;setSyncBadge('Luar talian','err');if(!silent)toast('Tiada sambungan ke Sheet.',false);return false;});
 }
 /* Muat TURUN: ambil data guru ini dari Sheet & ganti data tempatan */
+/* Muat data melalui POST (kata laluan/kod dalam body). Sandaran sementara: jika pelayan masih Code.gs lama
+   ('unknown action'), guna cara GET lama. Selepas Code.gs baharu dideploy, GET ditolak oleh pelayan. */
+function asResp(o){return {json:function(){return Promise.resolve(o);}};}
+function postWithLegacy(body,legacyQs){
+ return fetch(cloudCfg.url,{method:'POST',body:JSON.stringify(body)}).then(function(r){return r.json();}).then(function(res){
+  if(res&&res.error==='unknown action')return fetch(cloudCfg.url+'?'+legacyQs+'&t='+Date.now()).then(function(r){return r.json();}).then(asResp);
+  return asResp(res);
+ });
+}
+function cloudLoadReq(){return postWithLegacy({action:'load',guruId:guruId(),pin:cloudCfg.pin||''},'action=load&guruId='+encodeURIComponent(guruId()));}
+function coordLoadReq(key){return postWithLegacy({action:'loadAll',key:key},'action=loadAll&key='+encodeURIComponent(key));}
 function cloudPull(silent){
  if(!cloudReady()){if(!silent)toast('Isi Pautan & Nama/Kod Guru dahulu.',false);return Promise.resolve(false);}
  if(cloudBusy)return Promise.resolve(false);
  cloudBusy=true;setSyncBadge('Memuat turun…','busy');
- return fetch(cloudCfg.url+'?action=load&guruId='+encodeURIComponent(guruId())+'&t='+Date.now())
+ return cloudLoadReq()
   .then(function(r){return r.json();}).then(function(res){
    cloudBusy=false;
    if(res&&res.ok&&res.data&&res.data.students){
@@ -2538,13 +2550,13 @@ function cloudPull(silent){
     if(!silent)toast('Data dimuat dari Google Sheet.',true);return true;
    }
    if(res&&res.ok){setSyncBadge('Belum ada data anda di Sheet','');if(!silent)toast('Belum ada data untuk guru ini — tekan Muat Naik.',false);return false;}
-   setSyncBadge('Gagal memuat','err');if(!silent)toast('Gagal muat dari Sheet.',false);return false;
+   setSyncBadge(res&&res.error==='wrong-pin'?'Kata laluan tidak sepadan':'Gagal memuat','err');if(!silent)toast(res&&res.error==='wrong-pin'?'Kata laluan guru tidak sepadan dengan Sheet. Log keluar & masuk semula.':'Gagal muat dari Sheet.',false);return false;
   }).catch(function(){cloudBusy=false;setSyncBadge('Luar talian','err');if(!silent)toast('Tiada sambungan ke Sheet.',false);return false;});
 }
 /* Semasa mula (mod guru): pilih data terkini tempatan vs awan */
 function cloudSyncOnStart(){
  setSyncBadge('Menyegerak…','busy');
- fetch(cloudCfg.url+'?action=load&guruId='+encodeURIComponent(guruId())+'&t='+Date.now())
+ cloudLoadReq()
   .then(function(r){return r.json();}).then(function(res){
    try{
     if(res&&res.ok&&res.data&&res.data.students&&res.data.students.length){
@@ -2552,7 +2564,8 @@ function cloudSyncOnStart(){
      if(cu>=lu){state=normalizeState(res.data);if(!state.activeId&&state.students.length)state.activeId=state.students[0].id;saveStateLocal();renderAll();if(document.getElementById('s-tetapan').classList.contains('on'))renderTetapan();setSyncBadge('Segerak — data dari Sheet','ok');}
      else{appReady=true;cloudPush(true);}
      cloudCfg.lastSync=Date.now();saveCloudCfg();
-    }else{appReady=true;cloudPush(true);}
+    }else if(res&&res.ok){appReady=true;cloudPush(true);}   // Sheet kosong untuk guru ini → muat naik data tempatan
+    else{setSyncBadge(res&&res.error==='wrong-pin'?'Kata laluan tidak sepadan — log masuk semula':'Gagal menyegerak — data tempatan digunakan','err');}   // JANGAN muat naik jika muat turun gagal (elak menimpa data di Sheet)
    }finally{appReady=true;}
   }).catch(function(){setSyncBadge('Luar talian — guna data tempatan','err');appReady=true;});
 }
@@ -2587,7 +2600,7 @@ function coordLoad(){
  if(!coordReady()){toast('Isi Pautan & Kod Penyelaras dahulu.',false);renderPenyelaras();return Promise.resolve(false);}
  if(coordBusy)return Promise.resolve(false);
  coordBusy=true;var st=document.getElementById('coord-status');if(st){st.textContent='Memuat data semua guru…';st.className='sync-badge busy';}
- return fetch(cloudCfg.url+'?action=loadAll&key='+encodeURIComponent(cloudCfg.adminKey)+'&t='+Date.now())
+ return coordLoadReq(cloudCfg.adminKey)
   .then(function(r){return r.json();}).then(function(res){
    coordBusy=false;
    if(res&&res.ok&&Array.isArray(res.rows)){coordData=res.rows;coordLoadedAt=Date.now();cmtCache=null;coordRumahErr='';renderPenyelaras();coordRumahLoad(true);return true;}

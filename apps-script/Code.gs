@@ -39,17 +39,9 @@ var PHASE_LABEL = {
 function doGet(e) {
   var p = (e && e.parameter) || {};
   var action = p.action || 'load';
-  if (action === 'load') {
-    var gid = slug(p.guruId || '');
-    if (!gid) return out({ ok: true, data: null });
-    var row = findRow(gid);
-    return out({ ok: true, data: row ? readRowJson(row) : null });
-  }
-  if (action === 'loadAll') {
-    if (String(p.key || '') !== ADMIN_KEY) return out({ ok: false, error: 'unauthorized' });
-    return out({ ok: true, rows: readAllRows() });
-  }
-  if (action === 'version') return out({ ok: true, parentLogin: true, rumah: true, rumahAll: true });   // semakan pantas versi deploy
+  // KESELAMATAN: 'load' & 'loadAll' kini melalui POST sahaja (perlu kata laluan / kod dalam body).
+  if (action === 'load' || action === 'loadAll') return out({ ok: false, error: 'use-post' });
+  if (action === 'version') return out({ ok: true, parentLogin: true, rumah: true, rumahAll: true, secureLoad: true });   // semakan pantas versi deploy
   return out({ ok: false, error: 'unknown action' });
 }
 
@@ -71,12 +63,31 @@ function doPost(e) {
       return out({ ok: true, entries: rumahRead_(function (e) { return e.d >= sinceAll; }, true) });
     }
 
+    /* ----- GURU: muat data sendiri (perlu kata laluan) ----- */
+    if (body.action === 'load') {
+      var gl = slug(body.guruId || '');
+      if (!gl) return out({ ok: false, error: 'no-id' });
+      var rl = findRow(gl);
+      if (!rl) return out({ ok: true, data: null });
+      var spl = getPin(rl);
+      if (!spl || spl !== sha(body.pin || '')) return out({ ok: false, error: 'wrong-pin' });
+      return out({ ok: true, data: readRowJson(rl) });
+    }
+
+    /* ----- PENYELARAS: muat data semua guru (kod dalam body, bukan URL) ----- */
+    if (body.action === 'loadAll') {
+      if (String(body.key || '') !== ADMIN_KEY) return out({ ok: false, error: 'unauthorized' });
+      return out({ ok: true, rows: stripParentHash_(readAllRows()) });
+    }
+
     /* ----- LOG MASUK / DAFTAR (GURU) ----- */
     if (body.action === 'login') {
       var gid = slug(body.guruId || body.guruName || '');
       if (!gid) return out({ ok: false, error: 'no-id' });
+      if (!String(body.pin || '')) return out({ ok: false, error: 'no-pin' });
       var h = sha(body.pin || '');
-      var lock = LockService.getScriptLock(); lock.tryLock(25000);
+      var lock = LockService.getScriptLock();
+      if (!lock.tryLock(25000)) return out({ ok: false, error: 'busy' });
       try {
         var row = findRow(gid);
         if (!row) {                       // pengguna baharu -> daftar
@@ -99,7 +110,9 @@ function doPost(e) {
     if (body.action === 'save') {
       var g2 = slug(body.guruId || body.guruName || '');
       if (!g2) return out({ ok: false, error: 'no-id' });
-      var lock2 = LockService.getScriptLock(); lock2.tryLock(25000);
+      if (!String(body.pin || '')) return out({ ok: false, error: 'no-pin' });
+      var lock2 = LockService.getScriptLock();
+      if (!lock2.tryLock(25000)) return out({ ok: false, error: 'busy' });
       try {
         var row2 = findRow(g2);
         var h2 = sha(body.pin || '');
@@ -202,7 +215,8 @@ function parentSubmit_(body) {
   });
   var ts = new Date().getTime();
 
-  var lock = LockService.getScriptLock(); lock.tryLock(25000);
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) return { ok: false, error: 'busy' };
   try {
     var sh = rumahSheet_();
     var row = 0, last = sh.getLastRow();
@@ -310,10 +324,25 @@ function dataSheet() {
     sh.getRange(1, 1, 1, HEADER.length).setValues([HEADER]);
     try { sh.hideSheet(); } catch (e) {}
   } else if (sh.getRange(1, COL_PIN).getValue() !== 'pinHash') {
-    sh.clear();
-    sh.getRange(1, 1, 1, HEADER.length).setValues([HEADER]);
+    // KESELAMATAN DATA: JANGAN sekali-kali padam. Jika helaian kosong, tulis tajuk;
+    // jika ada data tetapi tajuk terusik (cth disusun/sort), hentikan supaya tiada data ditimpa.
+    if (sh.getLastRow() === 0) sh.getRange(1, 1, 1, HEADER.length).setValues([HEADER]);
+    else throw new Error('Tajuk helaian _data telah berubah (sel E1 bukan "pinHash"). Pulihkan melalui File > Version history. Tiada data dipadam.');
   }
+  try {   // amaran jika sesiapa cuba menyunting helaian ini secara manual
+    if (!sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).length)
+      sh.protect().setDescription('MyUA: jangan sunting/susun secara manual').setWarningOnly(true);
+  } catch (e) {}
   return sh;
+}
+// Hash kata laluan ibu bapa tidak perlu dihantar kepada penyelaras.
+function stripParentHash_(rows) {
+  rows.forEach(function (r) {
+    ((r.data && r.data.students) || []).forEach(function (s) {
+      if (s.parent) s.parent = { user: s.parent.user, hasPin: !!s.parent.ph };
+    });
+  });
+  return rows;
 }
 function findRow(gid) {
   var sh = dataSheet();
