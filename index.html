@@ -47,14 +47,15 @@ input,select,textarea{font-family:inherit;font-size:16px;outline:none;border:non
 /* ============ APP SHELL ============ */
 .app{
   width:100%; max-width:440px; margin:0 auto; background:var(--bg);
-  display:flex; flex-direction:column; position:relative; min-height:100dvh; overflow:hidden;
+  display:flex; flex-direction:column; position:relative; height:100vh; height:100dvh; overflow:hidden;
 }
 @media (min-width:600px){
   body{display:flex;align-items:center;justify-content:center;padding:22px 12px}
   .app{min-height:auto;height:min(924px,calc(100dvh - 44px));border-radius:36px;box-shadow:0 34px 90px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.05)}
 }
 .content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
-.screen{display:none;animation:fade .35s ease;padding-bottom:34px}
+.screen{display:none;animation:fade .35s ease;padding-bottom:112px}   /* ruang untuk bar navigasi terapung */
+#s-login{padding-bottom:0}
 .screen.on{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -316,7 +317,7 @@ textarea.input{resize:none;min-height:64px;line-height:1.5}
 .scan-fallback svg{width:44px;height:44px;margin-bottom:10px;opacity:.7}
 
 /* ============ TOAST ============ */
-.toast-wrap{position:absolute;left:0;right:0;bottom:96px;z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 20px}
+.toast-wrap{position:absolute;left:0;right:0;bottom:112px;z-index:80;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;padding:0 20px}
 .toast{background:#3a0e1a;color:#fff;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:800;box-shadow:0 12px 30px rgba(0,0,0,.3);display:flex;align-items:center;gap:9px;animation:toastin .3s cubic-bezier(.2,.9,.3,1);max-width:100%}
 .toast.win{background:linear-gradient(135deg,var(--g-mid),var(--g-dark))}
 .toast .t-pts{background:var(--lime);color:var(--lime-ink);padding:3px 9px;border-radius:99px;font-weight:900;font-size:12px}
@@ -658,7 +659,7 @@ body.parent-mode .par-bar{display:flex;align-items:center;gap:8px;padding:calc(v
 .par-bar select option{color:#2b1a20}
 .par-bar button{font-size:12px;font-weight:800;background:rgba(255,255,255,.16);border-radius:10px;padding:7px 12px}
 body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.parent-mode .nav-item[data-nav="pelajar"],body.parent-mode .hero-back,body.parent-mode #s-analisis .mode-toggle,body.parent-mode #ana-picker{display:none!important}
-#installBar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(412px,calc(100% - 24px));z-index:9999;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,.35);padding:12px;align-items:center;gap:10px;border:1px solid var(--line)}
+#installBar{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(104px + env(safe-area-inset-bottom,0px));width:min(412px,calc(100% - 24px));z-index:9999;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:0 12px 36px rgba(0,0,0,.35);padding:12px;align-items:center;gap:10px;border:1px solid var(--line)}
 #installBar.on{display:flex}
 #installBar img{width:42px;height:42px;border-radius:11px;flex:none}
 #installBar .ib-t{flex:1;min-width:0;font-size:12.5px;line-height:1.35}
@@ -825,6 +826,42 @@ html[data-dk] .rh-pill.ok{background:#14301f;color:#8fe0b0}html[data-dk] .rh-pil
 .rh-quote{font-size:12px;font-style:italic;color:var(--ink-2);margin-top:4px;line-height:1.4}
 .rh-status{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink-3)}
 .rh-status .mj-chip,.sec-head .mj-chip[data-action]{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+/* ============ GLASSMORPHISM (ringan & terpilih: header, nav, tetingkap, toast) ============ */
+.hero{background:
+  radial-gradient(200px 140px at 92% 8%, rgba(230,196,106,.38), transparent 70%),
+  radial-gradient(260px 200px at 6% 100%, rgba(220,47,110,.40), transparent 70%),
+  linear-gradient(150deg,#7a1f38 0%,#4a1020 72%)}
+.hero-back,.greet .avatar,.stud-switch,.pstat,.prof-av{
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.30);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 8px 22px rgba(0,0,0,.16);
+  -webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%)}
+.mata{background:linear-gradient(135deg,rgba(255,240,190,.86),rgba(236,204,120,.74));color:var(--lime-ink);
+  border:1px solid rgba(255,240,200,.85);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 10px 26px rgba(0,0,0,.22);
+  -webkit-backdrop-filter:blur(16px) saturate(170%);backdrop-filter:blur(16px) saturate(170%)}
+.nav{position:absolute;left:10px;right:10px;bottom:calc(8px + var(--safe-bot));z-index:40;border-radius:24px;
+  border:1px solid rgba(255,255,255,.6);border-top:1px solid rgba(255,255,255,.6);padding-bottom:8px;
+  background:rgba(255,255,255,.66);box-shadow:0 12px 34px rgba(74,16,32,.18),inset 0 1px 0 rgba(255,255,255,.7);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%)}
+.nav-scan{transform:translateY(-14px)}
+.overlay,.modal{background:rgba(30,8,15,.34);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.sheet,.modal-card{background:rgba(255,255,255,.82);border-top:1px solid rgba(255,255,255,.85);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}
+.toast{background:rgba(58,14,26,.78);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+#installBar{background:rgba(255,255,255,.80);border:1px solid rgba(255,255,255,.75);
+  -webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%)}
+html[data-dk] .nav{background:rgba(36,26,30,.68);border-color:rgba(255,255,255,.12);box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08)}
+html[data-dk] .sheet,html[data-dk] .modal-card{background:rgba(36,26,30,.84);border-top-color:rgba(255,255,255,.1)}
+html[data-dk] #installBar{background:rgba(36,26,30,.82);border-color:rgba(255,255,255,.12)}
+/* Sandaran: pelayar tanpa kesan kabur, atau "Kurangkan ketelusan" (iPhone/Android) */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .nav{background:var(--card)} .sheet,.modal-card{background:var(--bg)} #installBar{background:var(--card)} .toast{background:#3a0e1a}
+}
+@media (prefers-reduced-transparency:reduce){
+  .nav,.sheet,.modal-card,#installBar,.toast,.overlay,.modal,.hero-back,.greet .avatar,.stud-switch,.pstat,.prof-av,.mata{-webkit-backdrop-filter:none;backdrop-filter:none}
+  .nav{background:var(--card)} .sheet,.modal-card{background:var(--bg)} #installBar{background:var(--card)} .toast{background:#3a0e1a}
+  .overlay,.modal{background:rgba(30,8,15,.6)}
+}
+@media print{.nav,.overlay,.modal,.toast{backdrop-filter:none!important}}
 /* ============ TEMA GELAP (auto ikut telefon, atau pilih di Tetapan) ============ */
 :root[data-theme="dark"]{--bg:#170e11; --card:#241a1e; --ink:#f4eaed; --ink-2:#cbb5bc; --ink-3:#a58f97; --line:#3a2a30; --line-2:#4a3038;
   --g-soft:#36202a; --gold-soft:#3a3018; --danger-soft:#3d1b1e; --g-ink:#eaa9ba; --chart:#ff8fae; --chart-grid:#3a2a30; --ok-ink:#5fd497; --track:#33252a; --track-2:#33252a;
