@@ -1,6 +1,6 @@
 /*************************************************************
  * MyUA — Backend Google Apps Script
- * (RAMAI GURU + LOG MASUK + PENYELARAS + IBU BAPA + MURAJAAH RUMAH)
+ * (RAMAI GURU + LOG MASUK + PENYELARAS + IBU BAPA + MURAJAAH RUMAH + RELIEF)
  *
  * Satu Google Sheet dikongsi semua guru. Data setiap guru
  * disimpan dalam BARIS sendiri (dikunci ikut guruId + kata laluan).
@@ -8,7 +8,7 @@
  * Ibu bapa (action 'parentLogin') hanya menerima data anak sendiri,
  * dan boleh menghantar murajaah di rumah (action 'parentSubmit').
  *
- * Tab automatik: _data (tersembunyi), Guru, Pelajar, Rekod, Murajaah Rumah.
+ * Tab automatik: _data (tersembunyi), Guru, Pelajar, Rekod, Murajaah Rumah, Status Guru, Relief.
  *
  * SELEPAS TAMPAL: Deploy -> Manage deployments -> Edit (pensel)
  *   -> Version: "New version" -> Deploy.  (Save sahaja TIDAK cukup.)
@@ -41,7 +41,7 @@ function doGet(e) {
   var action = p.action || 'load';
   // KESELAMATAN: 'load' & 'loadAll' kini melalui POST sahaja (perlu kata laluan / kod dalam body).
   if (action === 'load' || action === 'loadAll') return out({ ok: false, error: 'use-post' });
-  if (action === 'version') return out({ ok: true, parentLogin: true, rumah: true, rumahAll: true, secureLoad: true });   // semakan pantas versi deploy
+  if (action === 'version') return out({ ok: true, parentLogin: true, rumah: true, rumahAll: true, secureLoad: true, relief: true });   // semakan pantas versi deploy
   return out({ ok: false, error: 'unknown action' });
 }
 
@@ -52,6 +52,19 @@ function doPost(e) {
     /* ----- IBU BAPA ----- */
     if (body.action === 'parentLogin') return out(parentLogin_(body));
     if (body.action === 'parentSubmit') return out(parentSubmit_(body));
+
+    /* ----- RELIEF & STATUS GURU ----- */
+    if (body.action === 'guruList') return out(guruList_(body));
+    if (body.action === 'statusSet') return out(statusSet_(body));
+    if (body.action === 'statusLoad') return out(statusLoad_(body));
+    if (body.action === 'reliefLoad') return out(reliefLoad_(body));
+    if (body.action === 'reliefSave') return out(reliefSave_(body));
+    if (body.action === 'reliefDelete') return out(reliefDelete_(body));
+    if (body.action === 'reliefMine') return out(reliefMine_(body));
+    if (body.action === 'reliefAll') {
+      if (String(body.key || '') !== ADMIN_KEY) return out({ ok: false, error: 'unauthorized' });
+      return out(reliefAll_(body));
+    }
 
     /* ----- GURU: baca murajaah rumah kelas sendiri ----- */
     if (body.action === 'rumahLoad') return out(rumahLoad_(body));
@@ -288,6 +301,193 @@ function rumahRead_(filterFn, keepGuruId) {
 function daysAgoKey_(n) {
   var t = new Date(new Date().getTime() - n * 86400000);
   return Utilities.formatDate(t, ss().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+}
+
+
+/* =====================================================================
+ *  RELIEF GURU ANGKAT
+ *  - Guru kelas menetapkan guru angkat (guruId) bagi setiap pelajar (student.guruAngkat).
+ *  - Relief aktif pada tarikh guru kelas bertanda tidak hadir (Cuti/MC/Kursus/Tugas Luar/
+ *    Mesyuarat) atau relief manual — disimpan dalam tab "Status Guru".
+ *  - Guru angkat merekod ke tab "Relief" (BUKAN terus ke data guru kelas) supaya tiada
+ *    data tertimpa; app guru kelas menggabungkan rekod ini ke kelasnya.
+ * ===================================================================== */
+var STATUS_SHEET = 'Status Guru';
+var STATUS_HEADER = ['Tarikh', 'Guru', 'Status', 'Catatan', 'Ditetapkan', 'guruId'];
+var STATUS_OK = { cuti: 'Cuti', mc: 'MC', kursus: 'Kursus', tugas: 'Tugas Luar', mesyuarat: 'Mesyuarat', relief: 'Relief (manual)' };
+var RELIEF_SHEET = 'Relief';
+var RELIEF_HEADER = ['Tarikh', 'Masa', 'Guru Kelas', 'Guru Angkat', 'Pelajar', 'Jenis', 'Fasa / Status', 'M/S',
+  'Penilaian', 'Catatan', 'ownerId', 'angkatId', 'studentId', 'recId', 'json'];
+
+function authGuru_(body) {
+  var gid = slug(body.guruId || '');
+  if (!gid) return { error: 'no-id' };
+  var row = findRow(gid);
+  if (!row) return { error: 'no-id' };
+  var sp = getPin(row);
+  if (!sp || sp !== sha(body.pin || '')) return { error: 'wrong-pin' };
+  return { gid: gid, row: row, name: String(dataSheet().getRange(row, COL_NAME).getValue() || gid) };
+}
+function isDate_(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')); }
+function sheetWith_(name, header, hideFrom) {
+  var sh = ss().getSheetByName(name);
+  if (!sh) {
+    sh = ss().insertSheet(name);
+    sh.getRange(1, 1, 1, header.length).setValues([header]);
+    styleHeader(sh, header.length);
+    if (hideFrom) { try { sh.hideColumns(hideFrom, header.length - hideFrom + 1); } catch (e) {} }
+  }
+  return sh;
+}
+function rows_(sh, ncol) {
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, ncol).getValues();
+}
+function dStr_(v) { return (v instanceof Date) ? Utilities.formatDate(v, ss().getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(v || ''); }
+
+/* Senarai guru berdaftar (untuk memilih guru angkat) */
+function guruList_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var sh = dataSheet(), last = sh.getLastRow(), list = [];
+  if (last >= 2) sh.getRange(2, 1, last - 1, 3).getValues().forEach(function (v) {
+    var id = String(v[0] || ''); if (id && id !== a.gid) list.push({ id: id, name: String(v[1] || id), kelas: String(v[2] || '') });
+  });
+  list.sort(function (x, y) { return x.name.localeCompare(y.name); });
+  return { ok: true, gurus: list };
+}
+
+/* Status guru ikut tarikh (status 'hadir' = padam) */
+function statusSet_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var dates = (Array.isArray(body.dates) ? body.dates : []).filter(isDate_).slice(0, 62);
+  if (!dates.length) return { ok: false, error: 'bad-date' };
+  var st = String(body.status || '');
+  if (st !== 'hadir' && !STATUS_OK[st]) return { ok: false, error: 'bad-status' };
+  var note = String(body.note || '').slice(0, 200);
+  var lock = LockService.getScriptLock(); if (!lock.tryLock(25000)) return { ok: false, error: 'busy' };
+  try {
+    var sh = sheetWith_(STATUS_SHEET, STATUS_HEADER, 6), vals = rows_(sh, 6), want = {};
+    dates.forEach(function (d) { want[d] = 1; });
+    for (var i = vals.length - 1; i >= 0; i--) {          // buang entri lama bagi tarikh yang sama
+      if (String(vals[i][5]) === a.gid && want[dStr_(vals[i][0])]) sh.deleteRow(i + 2);
+    }
+    if (st !== 'hadir') {
+      var now = new Date();
+      var add = dates.map(function (d) { return ["'" + d, a.name, STATUS_OK[st], note, now, a.gid]; });
+      sh.getRange(sh.getLastRow() + 1, 1, add.length, 6).setValues(add);
+    }
+  } finally { lock.releaseLock(); }
+  return statusLoad_(body);
+}
+function statusRead_(filterFn) {
+  var out = [];
+  rows_(ss().getSheetByName(STATUS_SHEET), 6).forEach(function (v) {
+    var e = { d: dStr_(v[0]), guruId: String(v[5] || ''), guru: String(v[1] || ''), label: String(v[2] || ''), note: String(v[3] || '') };
+    for (var k in STATUS_OK) if (STATUS_OK[k] === e.label) e.status = k;
+    if (e.guruId && e.status && filterFn(e)) out.push(e);
+  });
+  return out;
+}
+function statusLoad_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var from = daysAgoKey_(30);
+  return { ok: true, statuses: statusRead_(function (e) { return e.guruId === a.gid && e.d >= from; }) };
+}
+
+/* Guru angkat: pelajar yang perlu direlief pada tarikh d */
+function reliefLoad_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var d = isDate_(body.d) ? body.d : daysAgoKey_(0);
+  var active = {};
+  statusRead_(function (e) { return e.d === d; }).forEach(function (e) { active[e.guruId] = e; });
+  var groups = [];
+  readAllRows().forEach(function (r) {
+    if (!active[r.guruId] || r.guruId === a.gid) return;
+    var dd = r.data || {}, studs = [];
+    (dd.students || []).forEach(function (s) {
+      if (!s.guruAngkat || s.guruAngkat.id !== a.gid) return;
+      studs.push({ id: s.id, no: s.no, name: s.name, tingkatan: s.tingkatan, records: s.records || [],
+        attendance: (s.attendance || []).slice(-40), khatam: s.khatam || null, lamaJuz: s.lamaJuz || null });
+    });
+    if (studs.length) groups.push({ ownerId: r.guruId, ownerName: r.guruName || r.guruId, kelas: (dd.klass && dd.klass.name) || r.namaKelas || '',
+      status: active[r.guruId].label, mur: dd.mur || {}, points: dd.points || {}, students: studs });
+  });
+  var done = reliefRead_(function (e) { return e.angkatId === a.gid && e.d === d; });
+  return { ok: true, d: d, groups: groups, done: done };
+}
+function reliefRead_(filterFn) {
+  var out = [];
+  rows_(ss().getSheetByName(RELIEF_SHEET), RELIEF_HEADER.length).forEach(function (v) {
+    var e = { d: dStr_(v[0]), ownerId: String(v[10] || ''), angkatId: String(v[11] || ''), angkat: String(v[3] || ''),
+      sid: String(v[12] || ''), recId: String(v[13] || ''), kind: String(v[5] || '') === 'Kehadiran' ? 'att' : 'rec', item: null };
+    try { e.item = JSON.parse(v[14] || 'null'); } catch (err) {}
+    if (e.recId && e.item && filterFn(e)) out.push(e);
+  });
+  return out;
+}
+/* Guru angkat merekod (fasa atau kehadiran) */
+function reliefSave_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var owner = slug(body.ownerId || ''), sid = String(body.sid || ''), d = String(body.d || '');
+  if (!isDate_(d) || d < daysAgoKey_(1) || d > daysAgoKey_(-1)) return { ok: false, error: 'bad-date' };
+  var act = statusRead_(function (e) { return e.guruId === owner && e.d === d; });
+  if (!act.length) return { ok: false, error: 'not-active' };
+  var orow = findRow(owner); if (!orow) return { ok: false, error: 'no-owner' };
+  var od = readRowJson(orow) || {}, stu = null;
+  (od.students || []).forEach(function (s) { if (s.id === sid) stu = s; });
+  if (!stu || !stu.guruAngkat || stu.guruAngkat.id !== a.gid) return { ok: false, error: 'not-assigned' };
+  var kind = body.kind === 'att' ? 'att' : 'rec', it = body.item || {}, item, recId = String(it.id || '').slice(0, 40);
+  if (!recId) return { ok: false, error: 'no-id' };
+  if (kind === 'rec') {
+    var ph = String(it.phase || ''), sp = Math.round(+it.start), ep = Math.round(+it.end);
+    if (['talaqqi', 'tasmik', 'murajaah', 'tahriri'].indexOf(ph) < 0 || !(sp >= 1 && ep >= sp && ep <= 604)) return { ok: false, error: 'bad-item' };
+    item = { id: recId, phase: ph, start: sp, end: ep, ts: +it.ts || new Date().getTime(), note: String(it.note || '').slice(0, 200) };
+    if (['lancar', 'sederhana', 'lemah'].indexOf(it.grade) >= 0) item.grade = it.grade;
+  } else {
+    if (['hadir', 'tidak', 'lewat', 'cuti'].indexOf(it.status) < 0) return { ok: false, error: 'bad-item' };
+    item = { id: recId, status: it.status, date: d, note: String(it.note || '').slice(0, 200), ts: new Date().getTime() };
+  }
+  item.relief = { by: a.gid, name: a.name };
+  var lock = LockService.getScriptLock(); if (!lock.tryLock(25000)) return { ok: false, error: 'busy' };
+  try {
+    var sh = sheetWith_(RELIEF_SHEET, RELIEF_HEADER, 11);
+    var exists = reliefRead_(function (e) { return e.recId === recId; }).length;
+    if (!exists) {
+      var dt = new Date(item.ts || new Date().getTime());
+      sh.getRange(sh.getLastRow() + 1, 1, 1, RELIEF_HEADER.length).setValues([[
+        "'" + d, Utilities.formatDate(dt, ss().getSpreadsheetTimeZone(), 'HH:mm'), String(dataSheet().getRange(orow, COL_NAME).getValue() || owner), a.name,
+        stu.name || '', kind === 'att' ? 'Kehadiran' : 'Rekod', kind === 'att' ? item.status : (PHASE_LABEL[item.phase] || item.phase),
+        kind === 'att' ? '' : (item.start === item.end ? String(item.start) : item.start + '-' + item.end), item.grade || '', item.note || '',
+        owner, a.gid, sid, recId, JSON.stringify(item)]]);
+    }
+  } finally { lock.releaseLock(); }
+  return { ok: true, item: item };
+}
+/* Guru angkat membatalkan rekod relief (hari yang sama, dan belum digabung tidak menjadi masalah: guru kelas akan abaikan) */
+function reliefDelete_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var recId = String(body.recId || ''); if (!recId) return { ok: false, error: 'no-id' };
+  var lock = LockService.getScriptLock(); if (!lock.tryLock(25000)) return { ok: false, error: 'busy' };
+  try {
+    var sh = ss().getSheetByName(RELIEF_SHEET), vals = rows_(sh, RELIEF_HEADER.length), n = 0;
+    for (var i = vals.length - 1; i >= 0; i--) {
+      if (String(vals[i][13]) === recId && String(vals[i][11]) === a.gid) { sh.deleteRow(i + 2); n++; }
+    }
+    return { ok: true, deleted: n };
+  } finally { lock.releaseLock(); }
+}
+/* Guru kelas: rekod relief untuk pelajarnya (untuk digabung ke kelas) */
+function reliefMine_(body) {
+  var a = authGuru_(body); if (a.error) return { ok: false, error: a.error };
+  var since = daysAgoKey_(RUMAH_DAYS);
+  return { ok: true, entries: reliefRead_(function (e) { return e.ownerId === a.gid && e.d >= since; }) };
+}
+/* Penyelaras: status guru & relief (hari ini atau tarikh d) */
+function reliefAll_(body) {
+  var d = isDate_(body.d) ? body.d : daysAgoKey_(0);
+  return { ok: true, d: d,
+    statuses: statusRead_(function (e) { return e.d === d; }),
+    relief: reliefRead_(function (e) { return e.d === d; }).map(function (e) { return { ownerId: e.ownerId, angkatId: e.angkatId, angkat: e.angkat, sid: e.sid, kind: e.kind }; }) };
 }
 
 /* ---------------- Utiliti ---------------- */

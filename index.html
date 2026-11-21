@@ -747,6 +747,23 @@ body.parent-mode .nav-scan,body.parent-mode .nav-item[data-nav="utama"],body.par
 .mjd-tag.baru{background:#5b54d6}.mjd-tag.lama{background:#ef8f1c}
 .mjd-sub{font-size:12px;font-weight:700;color:var(--ink-2)}
 .mj-row.mjd-done{opacity:.8}
+/* ---- Relief ---- */
+.rl-entry{margin-top:10px}
+.rl-chips{display:flex;flex-wrap:wrap;gap:7px}
+.rl-chip{padding:8px 12px;border-radius:99px;border:1.5px solid var(--line-2);background:var(--card);font-size:12.5px;font-weight:900;color:var(--ink-2)}
+.rl-chip.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.rl-chip.ok.on{background:var(--c-hafazan);border-color:var(--c-hafazan)}
+.rl-range{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rl-range label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:var(--ink-2)}
+.rl-range .input{padding:10px;font-size:14px}
+.rl-up{margin-top:10px;border-top:1px dashed var(--line);padding-top:6px}
+.rl-uprow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;font-size:12.5px;color:var(--ink-2)}
+.rl-uprow b{color:var(--ink)}
+.rl-owner{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin:12px 2px 7px}
+.rl-owner b{color:var(--ink);font-size:14px}
+.rl-tag{font-size:11.5px;font-weight:900;padding:2px 9px;border-radius:99px;background:#dbe7ff;color:#1e40af}
+html[data-dk] .rl-tag{background:#1e2a4a;color:#9ab8ff}
+.rl-cnt{margin-left:auto;font-size:12px;font-weight:900;color:var(--ink-3)}
 /* ---- Mod Halaqah ---- */
 .hq-entry{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:14px;padding:13px 14px;border-radius:var(--r-lg);background:var(--card);border:1.5px solid var(--line-2);box-shadow:var(--sh-sm);color:var(--ink)}
 .hq-entry .hq-ei{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;color:#fff;background:linear-gradient(135deg,var(--g-mid),var(--g-dark))}
@@ -1103,6 +1120,7 @@ html[data-dk] .ring{background:conic-gradient(var(--chart) calc(var(--p)*1%), va
     <!-- ============ PAPAN PENYELARAS ============ -->
     <section class="screen" id="s-penyelaras"></section>
     <section class="screen" id="s-halaqah"></section>
+    <section class="screen" id="s-relief"></section>
 
     <!-- ============ TETAPAN ============ -->
     <section class="screen" id="s-tetapan">
@@ -1248,6 +1266,11 @@ html[data-dk] .ring{background:conic-gradient(var(--chart) calc(var(--p)*1%), va
         <label class="field-lbl" for="sm-kdate"><span data-ic="target"></span>Tarikh Khatam 30 Juz (jika sudah khatam)</label>
         <input class="input" type="date" id="sm-kdate">
         <div class="hint" id="sm-khint" style="font-size:12px;color:var(--ink-3);margin-top:6px">Kosongkan jika belum khatam. Khatam juga dikesan automatik apabila Tasmik mencecah M/S 604.</div>
+      </div>
+      <div class="field">
+        <label class="field-lbl" for="sm-angkat"><span data-ic="users"></span>Guru Angkat (relief)</label>
+        <select class="picker" id="sm-angkat"><option value="">Tiada</option></select>
+        <div class="hint" id="sm-ahint" style="font-size:12px;color:var(--ink-3);margin-top:6px">Guru angkat akan merekod pelajar ini apabila anda tidak hadir atau mengaktifkan relief.</div>
       </div>
       <div class="field">
         <label class="field-lbl" for="sm-puser"><span data-ic="users"></span>Akaun Ibu Bapa (pilihan)</label>
@@ -1495,6 +1518,7 @@ function normalizeState(d){
   var tk=parseInt(s.tingkatan,10);if(tk>=1&&tk<=5)o0.tingkatan=tk;
   if(s.parent&&s.parent.user&&s.parent.ph)o0.parent={user:String(s.parent.user),ph:String(s.parent.ph)};
   if(s.khatam&&+s.khatam.ts>0)o0.khatam={ts:+s.khatam.ts};   // khatam ditanda guru (selain dikesan automatik)
+  if(s.guruAngkat&&s.guruAngkat.id)o0.guruAngkat={id:String(s.guruAngkat.id),name:String(s.guruAngkat.name||s.guruAngkat.id)};
   if(Array.isArray(s.lamaJuz)){var lj=s.lamaJuz.map(Number).filter(function(j){return j>=1&&j<=30;});if(lj.length)o0.lamaJuz=lj;}
   return o0;
  }):[];
@@ -1506,6 +1530,7 @@ function normalizeState(d){
   target:(typeof d.target==='number'&&d.target>0)?d.target:5,
   mur:Object.assign({cap:10,baru:2,lama:5,lamaKhatam:10,thr:70,khatam:''},d.mur||{}),
   comments:(d.comments&&typeof d.comments==='object'&&!Array.isArray(d.comments))?d.comments:{},
+  reliefSeen:Array.isArray(d.reliefSeen)?d.reliefSeen.slice(-800):[],   // id rekod relief yang sudah digabung
   annual:Object.assign({end:''},d.annual||{}),
   students:students,
   activeId:activeId,
@@ -1793,6 +1818,7 @@ function renderHome(){
     +mjHomeBanner()
     +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="medal"></span> Pelajar Terbaik</div><button class="link" data-nav="analisis">Ranking Penuh '+svg(ICONS.chev,13)+'</button></div>'+topHTML+'</div>'
     +'<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="clock"></span> Aktiviti Terkini</div></div><div class="actf-row">'+actChips+'</div>'+recents+'</div>'
+    +rlHomeCard()
     +'<button class="hq-entry" style="margin-bottom:6px" data-nav="halaqah"><span class="hq-ei">'+svg(ICONS.flash,20)+'</span><span class="hq-et"><b>Mod Halaqah</b><small>Rekod pantas ikut tingkatan — satu tekan setiap pelajar</small></span>'+svg(ICONS.chev,16)+'</button>'
   +'</div>';
  paintIcons(document.getElementById('s-utama'));
@@ -2209,6 +2235,7 @@ function openStudentModal(id){
  var kd=document.getElementById('sm-kdate'),kh=document.getElementById('sm-khint'),auto=s?khatamInfo({records:s.records}):null;
  if(kd){kd.max=todayKey();kd.value=(s&&s.khatam&&s.khatam.ts)?dayKey(s.khatam.ts):'';}
  if(kh)kh.innerHTML=auto?('Dikesan automatik: Tasmik mencecah M/S 604 pada <b>'+fmtDate(auto.ts)+'</b>. Isi tarikh hanya jika khatam lebih awal (sebelum direkod dalam MyUA).'):'Kosongkan jika belum khatam. Khatam juga dikesan automatik apabila Tasmik mencecah M/S 604.';
+ rlFillAngkat(s);
  document.getElementById('studentModal').classList.add('on');
  setTimeout(function(){try{document.getElementById('sm-name').focus();}catch(e){}},60);
 }
@@ -2224,18 +2251,23 @@ function saveStudentModal(){
  var kdv=(document.getElementById('sm-kdate')||{}).value||'';
  if(kdv&&kdv>todayKey()){toast('Tarikh khatam tidak boleh pada masa hadapan.',false);shake('sm-kdate');return;}
  var khObj=kdv?{ts:new Date(kdv+'T12:00:00').getTime()}:null;
+ var agSel=document.getElementById('sm-angkat'),agv=agSel?agSel.value:'',agObj=null;
+ if(agv){var ago=agSel.options[agSel.selectedIndex];agObj={id:agv,name:(ago&&ago.getAttribute('data-name'))||agv};}
+ var agKeep=agSel&&agSel.getAttribute('data-keep')==='1';
  var finish=function(par){
   if(par&&state.students.some(function(x){return x!==old&&x.parent&&x.parent.user===par.user&&x.parent.ph!==par.ph;})){toast('Kod ibu bapa ini sudah digunakan dengan kata laluan lain.',false);shake('sm-puser');return;}
   if(old){
    old.name=name;old.no=no;if(tkt>=1&&tkt<=5)old.tingkatan=tkt;else delete old.tingkatan;
    if(par)old.parent=par;else delete old.parent;
    if(khObj)old.khatam=khObj;else delete old.khatam;
+   if(!agKeep){if(agObj)old.guruAngkat=agObj;else delete old.guruAngkat;}
    toast('Maklumat pelajar dikemaskini.',true);
   }else{
    var ns={id:uid(),no:no,name:name,records:[],attendance:[],meta:{created:Date.now()}};
    if(tkt>=1&&tkt<=5)ns.tingkatan=tkt;
    if(par)ns.parent=par;
    if(khObj)ns.khatam=khObj;
+   if(agObj)ns.guruAngkat=agObj;
    state.students.push(ns);
    if(!state.activeId)state.activeId=ns.id;
    toast('Pelajar ditambah.',true);
@@ -2264,7 +2296,7 @@ function delStudent(id){
 function renderAll(){renderHome();renderRekodHeader();renderList();refreshFasaSave();}
 function navTo(name){
  if(parentMode&&name!=='laporan')name='analisis';
- ['utama','pelajar','rekod','analisis','laporan','murajaah','tetapan','penyelaras','halaqah'].forEach(function(n){var s=document.getElementById('s-'+n);if(s)s.classList.toggle('on',n===name);});
+ ['utama','pelajar','rekod','analisis','laporan','murajaah','tetapan','penyelaras','halaqah','relief'].forEach(function(n){var s=document.getElementById('s-'+n);if(s)s.classList.toggle('on',n===name);});
  document.querySelectorAll('.nav-item').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-nav')===(name==='murajaah'?'analisis':name));});
  if(name==='utama')renderHome();
  else if(name==='pelajar')renderStudents();
@@ -2273,6 +2305,7 @@ function navTo(name){
  else if(name==='murajaah')renderMurajaah();
  else if(name==='tetapan')renderTetapan();
  else if(name==='halaqah')renderHalaqah();
+ else if(name==='relief'){renderRelief();rlRefresh();}
  else if(name==='penyelaras'){renderPenyelaras();if(coordReady()&&!coordData.length)coordLoad();}
  else if(name==='rekod'){renderRekodHeader();if(document.getElementById('view-saya').classList.contains('on'))renderList();}
  document.getElementById('content').scrollTop=0;
@@ -2624,7 +2657,7 @@ function cloudSyncOnStart(){
      cloudCfg.lastSync=Date.now();saveCloudCfg();
     }else if(res&&res.ok){appReady=true;cloudPush(true);}   // Sheet kosong untuk guru ini → muat naik data tempatan
     else{setSyncBadge(res&&res.error==='wrong-pin'?'Kata laluan tidak sepadan — log masuk semula':'Gagal menyegerak — data tempatan digunakan','err');}   // JANGAN muat naik jika muat turun gagal (elak menimpa data di Sheet)
-   }finally{appReady=true;}
+   }finally{appReady=true;rlMerge();rlRefresh(true);}
   }).catch(function(){setSyncBadge('Luar talian — guna data tempatan','err');appReady=true;});
 }
 function scheduleCloudPush(){
@@ -2661,7 +2694,7 @@ function coordLoad(){
  return coordLoadReq(cloudCfg.adminKey)
   .then(function(r){return r.json();}).then(function(res){
    coordBusy=false;
-   if(res&&res.ok&&Array.isArray(res.rows)){coordData=res.rows;coordLoadedAt=Date.now();cmtCache=null;coordRumahErr='';renderPenyelaras();coordRumahLoad(true);return true;}
+   if(res&&res.ok&&Array.isArray(res.rows)){coordData=res.rows;coordLoadedAt=Date.now();cmtCache=null;coordRumahErr='';coordRelief=null;renderPenyelaras();coordRumahLoad(true);return true;}
    if(res&&res.error==='unauthorized')toast('Kod Penyelaras salah.',false);else toast('Gagal memuat data guru.',false);
    renderPenyelaras();return false;
   }).catch(function(){coordBusy=false;toast('Tiada sambungan ke Sheet.',false);renderPenyelaras();return false;});
@@ -2931,11 +2964,34 @@ function renderPenyelaras(){
  var loaded=coordLoadedAt?('Dikemas kini '+fmtTime(coordLoadedAt)):'Sedia';
  var bar='<div class="coord-bar"><span class="sync-badge ok" id="coord-status">'+esc(loaded)+'</span><button class="btn btn-line sm" data-action="coord-refresh">'+svg(ICONS.refresh,15)+' Segar Semula</button></div>';
  var toggle='<div class="mode-toggle c4"><button class="'+(coordMode==='ringkasan'?'on':'')+'" data-cmode="ringkasan">'+svg(ICONS.users,15)+' Ringkasan</button><button class="'+(coordMode==='keseluruhan'?'on':'')+'" data-cmode="keseluruhan">'+svg(ICONS.chart,15)+' Keseluruhan</button><button class="'+(coordMode==='guru'?'on':'')+'" data-cmode="guru">'+svg(ICONS.teacher,15)+' Ikut Guru</button><button class="'+(coordMode==='terbaik'?'on':'')+'" data-cmode="terbaik">'+svg(ICONS.trophy,15)+' Terbaik</button><button class="'+(coordMode==='mesyuarat'?'on':'')+'" data-cmode="mesyuarat">'+svg(ICONS.report,15)+' Laporan Penyelaras</button></div>';
- var body=(coordMode==='mesyuarat')?coordMeetingScreen():(coordMode==='terbaik')?coordTerbaikHTML():(coordMode==='keseluruhan')?coordKeseluruhanHTML():(coordMode==='guru')?coordGuruHTML():coordRingkasanHTML();
+ var body=(coordMode==='ringkasan'?coordReliefHTML():'')+((coordMode==='mesyuarat')?coordMeetingScreen():(coordMode==='terbaik')?coordTerbaikHTML():(coordMode==='keseluruhan')?coordKeseluruhanHTML():(coordMode==='guru')?coordGuruHTML():coordRingkasanHTML());
  host.innerHTML=head+'<div class="pad" style="padding-top:16px">'+bar+toggle+body+'</div>';
  paintIcons(host);
 }
 
+var coordRelief=null,coordReliefBusy=false;
+function coordReliefLoad(){
+ if(coordReliefBusy||!coordReady())return;coordReliefBusy=true;
+ fetch(cloudCfg.url,{method:'POST',body:JSON.stringify({action:'reliefAll',key:cloudCfg.adminKey,d:todayKey()})}).then(function(r){return r.json();})
+ .then(function(res){coordRelief=(res&&res.ok)?res:{err:(res&&res.error==='unknown action')?'Pelayan belum dikemas kini untuk Relief.':'Gagal memuat status guru.'};})
+ .catch(function(){coordRelief={err:'Tiada sambungan.'};})
+ .then(function(){coordReliefBusy=false;if(coordMode==='ringkasan'&&isOn('penyelaras'))renderPenyelaras();});
+}
+function coordReliefHTML(){
+ if(!coordRelief){coordReliefLoad();return '<div class="mj-card"><div class="mj-ct">'+svg(ICONS.users,16)+' Status Guru &amp; Relief Hari Ini</div><div class="mj-note" style="margin-top:0">Memuat…</div></div>';}
+ if(coordRelief.err)return '<div class="mj-card"><div class="mj-ct">'+svg(ICONS.users,16)+' Status Guru &amp; Relief Hari Ini</div><div class="mj-note" style="margin-top:0">'+esc(coordRelief.err)+'</div></div>';
+ var S=coordRelief.statuses||[],R=coordRelief.relief||[],byId={};coordData.forEach(function(e){byId[e.guruId]=e;});
+ var h='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.users,16)+' Status Guru &amp; Relief Hari Ini <span class="kh-date">'+(coordData.length-S.length)+' hadir · '+S.length+' tidak hadir/relief</span></div>';
+ if(!S.length)return h+'<div class="mj-good" style="margin-top:0">Semua guru hadir hari ini (tiada status ditanda).</div></div>';
+ h+=S.map(function(st){
+  var e=byId[st.guruId],studs=((e&&e.data&&e.data.students)||[]),ag={},noAg=0;
+  studs.forEach(function(x){if(x.guruAngkat&&x.guruAngkat.id){var a=ag[x.guruAngkat.id]=ag[x.guruAngkat.id]||{name:x.guruAngkat.name,ids:{},n:0};a.n++;a.ids[x.id]=1;}else noAg++;});
+  var rows=Object.keys(ag).map(function(id){var a=ag[id],dn={};R.forEach(function(r){if(r.ownerId===st.guruId&&r.angkatId===id&&a.ids[r.sid])dn[r.sid]=1;});return '<div class="rl-uprow"><span>→ <b>'+esc(a.name)+'</b>: '+Object.keys(dn).length+'/'+a.n+' pelajar direkod</span></div>';}).join('');
+  return '<div class="rl-owner" style="margin-top:8px"><b>'+esc(st.guru)+'</b> <span class="rl-tag">'+esc(st.label)+'</span>'+(st.note?' <span class="cm-sm" style="font-size:12px;color:var(--ink-2)">'+esc(st.note)+'</span>':'')+'</div>'
+   +rows+(noAg?'<div class="mj-note" style="margin-top:2px;color:var(--danger)">'+noAg+' pelajar tiada guru angkat</div>':'');
+ }).join('');
+ return h+'</div>';
+}
 function coordRingkasanHTML(){
  var tG=coordData.length,tS=0,tR=0,tM=0;
  coordData.forEach(function(e){var x=teacherStats(e);tS+=x.students;tR+=x.records;tM+=x.mata;});
@@ -4440,6 +4496,14 @@ document.addEventListener('click',function(e){
   case 'ctb-phase':ctbPhase=el.getAttribute('data-ph');ctbAll=false;renderPenyelaras();break;
   case 'ctb-tk':ctbTk=el.getAttribute('data-tk');ctbAll=false;renderPenyelaras();break;
   case 'ctb-all':ctbAll=!ctbAll;renderPenyelaras();break;
+  case 'rl-st':rlSetStatus(el.getAttribute('data-st'),[todayKey()]);break;
+  case 'rl-range':rlSetRange();break;
+  case 'rl-del':rlSetStatus('hadir',[el.getAttribute('data-d')]);break;
+  case 'rl-open':rlOpen=(rlOpen===el.getAttribute('data-k'))?null:el.getAttribute('data-k');renderRelief();break;
+  case 'rl-ph':rlPh[el.getAttribute('data-k')]=el.getAttribute('data-ph');delete rlPg[el.getAttribute('data-k')];renderRelief();break;
+  case 'rl-save':rlSave(el.getAttribute('data-k'),el.getAttribute('data-grade')||'',el.getAttribute('data-att')||'');break;
+  case 'rl-undo':rlUndo(el.getAttribute('data-k'));break;
+  case 'rl-refresh':rlRefresh();break;
   case 'hq-tab':hqTk=el.getAttribute('data-tk');hqOpen=null;renderHalaqah();break;
   case 'hq-open':hqToggle(el.getAttribute('data-id'));break;
   case 'hq-phase':hqSetPhase(el.getAttribute('data-id'),el.getAttribute('data-ph'));break;
@@ -4562,6 +4626,184 @@ document.getElementById('studentModal').addEventListener('click',function(e){if(
   setTimeout(show,1200);
  }
 })();
+
+/* ---------------- RELIEF GURU ANGKAT ----------------
+ * Guru kelas: tetapkan guru angkat setiap pelajar + status/relief ikut tarikh.
+ * Guru angkat: skrin Relief — pelajar yang diserahkan pada hari relief aktif; rekod disimpan
+ * di tab "Relief" (bukan terus ke data guru kelas), dan digabung ke kelas guru asal bila dia membuka app. */
+var RL_ST={cuti:'Cuti',mc:'MC',kursus:'Kursus',tugas:'Tugas Luar',mesyuarat:'Mesyuarat',relief:'Relief (manual)'};
+var rlGurus=null,rlStatuses=[],rlData=null,rlErr='',rlBusy=false,rlOpen=null,rlPh={},rlPg={},rlDone={},rlAt=0;
+function rlApi(action,extra){
+ return fetch(cloudCfg.url,{method:'POST',body:JSON.stringify(Object.assign({action:action,guruId:guruId(),pin:cloudCfg.pin||''},extra||{}))}).then(function(r){return r.json();});
+}
+function rlCan(){return !parentMode&&cloudCfg.role!=='penyelaras'&&cloudReady()&&!!cloudCfg.pin;}
+function rlErrTxt(res){return (res&&res.error==='unknown action')?'Pelayan belum dikemas kini — tampal Code.gs baharu & Deploy versi baharu.':(res&&res.error==='wrong-pin')?'Kata laluan guru tidak sepadan. Log keluar & masuk semula.':(res&&res.error==='not-active')?'Relief guru ini tidak aktif hari ini.':(res&&res.error==='not-assigned')?'Pelajar ini bukan di bawah anda sebagai guru angkat.':'Gagal ('+((res&&res.error)||'tiada sambungan')+').';}
+/* -- borang pelajar: senarai guru berdaftar -- */
+function rlFillAngkat(s){
+ var sel=document.getElementById('sm-angkat'),hint=document.getElementById('sm-ahint');if(!sel)return;
+ var cur=s&&s.guruAngkat?s.guruAngkat:null;
+ var paint=function(){
+  var L=rlGurus||[];sel.removeAttribute('data-keep');
+  sel.innerHTML='<option value="">Tiada</option>'+L.map(function(g){return '<option value="'+esc(g.id)+'" data-name="'+esc(g.name)+'"'+(cur&&cur.id===g.id?' selected':'')+'>'+esc(g.name)+(g.kelas?' — '+esc(g.kelas):'')+'</option>';}).join('');
+  if(cur&&!L.some(function(g){return g.id===cur.id;}))sel.insertAdjacentHTML('beforeend','<option value="'+esc(cur.id)+'" data-name="'+esc(cur.name)+'" selected>'+esc(cur.name)+'</option>');
+ };
+ if(!rlCan()){sel.innerHTML=cur?'<option value="'+esc(cur.id)+'" data-name="'+esc(cur.name)+'" selected>'+esc(cur.name)+'</option>':'<option value="">Tiada</option>';sel.setAttribute('data-keep','1');
+  if(hint)hint.textContent='Log masuk sebagai guru (dalam talian) untuk memilih guru angkat daripada senarai guru berdaftar.';return;}
+ if(rlGurus){paint();return;}
+ sel.innerHTML=cur?'<option value="'+esc(cur.id)+'" data-name="'+esc(cur.name)+'" selected>'+esc(cur.name)+'</option>':'<option value="">Memuat senarai guru…</option>';sel.setAttribute('data-keep','1');
+ rlApi('guruList').then(function(res){
+  if(res&&res.ok){rlGurus=res.gurus||[];paint();}
+  else if(hint)hint.textContent=rlErrTxt(res);
+ }).catch(function(){if(hint)hint.textContent='Tiada sambungan — senarai guru tidak dapat dimuat.';});
+}
+/* -- muat status sendiri & relief sebagai guru angkat -- */
+function rlRefresh(silent){
+ if(!rlCan()||rlBusy)return;
+ rlBusy=true;if(!silent&&isOn('relief'))renderRelief();
+ Promise.all([rlApi('statusLoad'),rlApi('reliefLoad',{d:todayKey()})]).then(function(rs){
+  var a=rs[0],b=rs[1];
+  if(a&&a.ok)rlStatuses=a.statuses||[];
+  if(b&&b.ok){rlData=b;rlDone={};(b.done||[]).forEach(function(e){(rlDone[e.ownerId+'|'+e.sid]=rlDone[e.ownerId+'|'+e.sid]||[]).push(e);});rlErr='';}
+  else rlErr=rlErrTxt(b&&b.ok?a:b);
+ }).catch(function(){rlErr='Tiada sambungan internet.';}).then(function(){
+  rlBusy=false;rlAt=Date.now();
+  if(isOn('relief'))renderRelief();
+  if(isOn('utama')){var c=document.getElementById('rl-home');if(c)c.outerHTML=rlHomeCard();}
+ });
+}
+function rlTodayStatus(){var t=todayKey();return rlStatuses.filter(function(x){return x.d===t;})[0]||null;}
+function rlReliefCount(){var n=0;((rlData&&rlData.groups)||[]).forEach(function(g){n+=g.students.length;});return n;}
+function rlHomeCard(){
+ if(!rlCan())return '';
+ var st=rlTodayStatus(),n=rlReliefCount();
+ return '<button class="hq-entry rl-entry" id="rl-home" data-nav="relief"><span class="hq-ei" style="background:linear-gradient(135deg,#2563eb,#1e40af)">'+svg(ICONS.users,20)+'</span>'
+  +'<span class="hq-et"><b>Relief &amp; Status Guru</b><small>Status hari ini: '+(st?esc(RL_ST[st.status]||st.label):'Hadir')+(n?' · <b style="display:inline;font-size:inherit;color:#2563eb">Anda guru angkat: '+n+' pelajar</b>':'')+'</small></span>'+svg(ICONS.chev,16)+'</button>';
+}
+function rlSetStatus(st,dates){
+ if(!rlCan()){toast('Perlu log masuk guru dalam talian.',false);return;}
+ rlApi('statusSet',{status:st,dates:dates,note:(document.getElementById('rl-note')||{}).value||''}).then(function(res){
+  if(res&&res.ok){rlStatuses=res.statuses||[];toast(st==='hadir'?'Status dikemas kini: Hadir.':'Status '+RL_ST[st]+' ditetapkan. Relief aktif untuk pelajar anda.',true);renderRelief();}
+  else toast(rlErrTxt(res),false);
+ }).catch(function(){toast('Tiada sambungan internet.',false);});
+}
+function rlSetRange(){
+ var a=(document.getElementById('rl-from')||{}).value,b=(document.getElementById('rl-to')||{}).value||a,st=(document.getElementById('rl-type')||{}).value;
+ if(!a){toast('Pilih tarikh mula.',false);shake('rl-from');return;}
+ if(b<a){toast('Tarikh akhir mesti selepas tarikh mula.',false);shake('rl-to');return;}
+ var ds=[],t=new Date(a+'T12:00:00');while(dayKey(t.getTime())<=b&&ds.length<62){ds.push(dayKey(t.getTime()));t.setDate(t.getDate()+1);}
+ rlSetStatus(st,ds);
+}
+/* -- skrin Relief -- */
+function renderRelief(){
+ var el=document.getElementById('s-relief');if(!el)return;
+ var head='<div class="hero flat"><div class="hero-top"><button class="hero-back" data-nav="utama" aria-label="Kembali"><span data-ic="back"></span></button><div class="hero-title">RELIEF &amp; STATUS</div><button class="hero-back" data-action="rl-refresh" aria-label="Segar semula">'+svg(ICONS.refresh,18)+'</button></div>'
+  +'<div style="text-align:center;margin-top:6px"><div class="brand-tag" style="opacity:.9">'+rhDayLabel(todayKey())+'</div></div></div>';
+ if(!rlCan()){el.innerHTML=head+'<div class="pad" style="padding-top:16px"><div class="mj-mid2">Log masuk sebagai guru (dalam talian) untuk menggunakan Relief.</div></div>';paintIcons(el);return;}
+ var st=rlTodayStatus(),h='';
+ if(rlErr)h+='<div class="mj-warn" style="margin-top:0">'+esc(rlErr)+'</div>';
+ // Status saya hari ini
+ h+='<div class="mj-card" style="margin-top:0"><div class="mj-ct">'+svg(ICONS.calendar,16)+' Status Saya Hari Ini</div>'
+  +'<div class="rl-chips">'+['hadir'].concat(Object.keys(RL_ST)).map(function(k){var on=k==='hadir'?!st:(st&&st.status===k);return '<button class="rl-chip'+(on?' on':'')+(k==='hadir'?' ok':'')+'" data-action="rl-st" data-st="'+k+'">'+(k==='hadir'?'Hadir':RL_ST[k])+'</button>';}).join('')+'</div>'
+  +'<input class="input" id="rl-note" placeholder="Catatan (pilihan), cth: kursus di Shah Alam" maxlength="200" style="margin-top:10px;font-size:14px" aria-label="Catatan status">'
+  +'<div class="mj-note">Selain <b>Hadir</b>, semua status mengaktifkan relief: pelajar anda yang ada guru angkat akan muncul di app guru angkat masing-masing.</div></div>';
+ // Tarikh lain
+ var up=rlStatuses.filter(function(x){return x.d>=todayKey();}).sort(function(a,b){return a.d<b.d?-1:1;});
+ h+='<div class="mj-card"><div class="mj-ct">'+svg(ICONS.calendar,16)+' Tetapkan Tarikh Lain</div>'
+  +'<div class="rl-range"><label>Dari<input class="input" type="date" id="rl-from" min="'+todayKey()+'"></label><label>Hingga<input class="input" type="date" id="rl-to" min="'+todayKey()+'"></label></div>'
+  +'<select class="picker" id="rl-type" aria-label="Jenis status" style="margin-top:8px">'+Object.keys(RL_ST).map(function(k){return '<option value="'+k+'">'+RL_ST[k]+'</option>';}).join('')+'</select>'
+  +'<button class="btn btn-primary btn-block sm" data-action="rl-range">Tetapkan &amp; aktifkan relief</button>'
+  +(up.length?'<div class="rl-up">'+up.map(function(x){return '<div class="rl-uprow"><span><b>'+rhDayLabel(x.d)+'</b> · '+esc(RL_ST[x.status]||x.label)+(x.note?' — '+esc(x.note):'')+'</span><button class="mj-chip" data-action="rl-del" data-d="'+x.d+'" style="cursor:pointer">Batal</button></div>';}).join('')+'</div>':'')
+  +'</div>';
+ // Pelajar saya tanpa guru angkat
+ var noAg=state.students.filter(function(x){return !x.guruAngkat;}).length;
+ if(noAg)h+='<div class="mj-mid2">'+noAg+' pelajar anda belum ada guru angkat. Tetapkan melalui <b>Tetapan → Senarai Pelajar → sunting pelajar</b>.</div>';
+ // Relief sebagai guru angkat
+ var G=(rlData&&rlData.groups)||[];
+ h+='<div class="section"><div class="sec-head"><div class="sec-title"><span data-ic="users"></span> Relief Saya Hari Ini</div>'+(rlBusy?'<span class="mj-chip">Memuat…</span>':'')+'</div>';
+ if(!G.length)h+='<div class="mj-note" style="margin-top:0">'+(rlData?'Tiada pelajar relief untuk anda hari ini.':'Belum dimuat.')+'</div>';
+ G.forEach(function(g){
+  var dn=g.students.filter(function(x){return (rlDone[g.ownerId+'|'+x.id]||[]).length;}).length;
+  h+='<div class="rl-owner"><b>'+esc(g.ownerName)+'</b>'+(g.kelas?' · '+esc(g.kelas):'')+' <span class="rl-tag">'+esc(g.status)+'</span><span class="rl-cnt">'+dn+'/'+g.students.length+'</span></div><div class="hq-list">'
+   +g.students.map(function(x){return rlRow(g,x);}).join('')+'</div>';
+ });
+ h+='</div>';
+ el.innerHTML=head+'<div class="pad" style="padding-top:16px">'+h+'</div>';
+ paintIcons(el);
+ var inp=document.getElementById('rl-page');
+ if(inp)inp.addEventListener('input',function(){rlPg[inp.getAttribute('data-k')]=inp.value;var a=document.getElementById('rl-auto');if(a)a.textContent=hqAutoTxt(inp.value);});
+}
+function rlRow(g,x){
+ var k=g.ownerId+'|'+x.id,done=rlDone[k]||[],open=rlOpen===k,last=done[done.length-1];
+ var ph,sg,an;
+ cmtWithMur(g.mur,function(){an=mjAnalyse(x,Date.now(),mjCfg());ph=rlPh[k]||hqDefaultPhase(x,an);sg=ph===ATT_KEY?{a:null,why:'Rekod kehadiran'}:hqSuggest(x,ph,an);});
+ var txt=last?(last.kind==='att'?(ATT_STATUS[last.item.status]||{}).label:hqRecText(last.item)):null;
+ var h='<div class="hq-row'+(open?' open':'')+'"><button class="hq-top" data-action="rl-open" data-k="'+esc(k)+'">'
+  +'<span class="st-av" style="background:'+avatarColor(x.id)+'">'+esc(initials(x.name))+'</span>'
+  +'<span class="hq-mid"><b>'+esc(x.name)+'</b><small>'+(last?('Direkod '+done.length+'× · terakhir: '+esc(txt)):('<b class="hq-phl" style="color:'+hqCol(ph)+';font-weight:900">'+hqLbl(ph)+'</b> · '+esc(sg.why)))+'</small></span>'
+  +(open?'':(last?'<span class="hq-pill ok">'+esc(txt)+'</span>':'<span class="hq-pill ph" style="background:'+tint(hqCol(ph),'22')+';color:'+hqCol(ph)+'">'+(ph===ATT_KEY?'Kehadiran':sg.a?mjRange(sg.a,sg.b):'M/S ?')+'</span>'))+'</button>';
+ if(open){
+  var pv=(rlPg[k]!=null)?rlPg[k]:(sg.a?(sg.a===sg.b?String(sg.a):sg.a+'-'+sg.b):'');
+  h+='<div class="hq-panel"><div class="hq-why">'+svg(ICONS.target,14)+' '+esc(sg.why)+'</div>'
+   +'<div class="hq-phs">'+HQ_PHASES.map(function(p){return '<button class="hq-ph'+(p===ph?' on':'')+'" style="--ac:'+hqCol(p)+'" data-action="rl-ph" data-k="'+esc(k)+'" data-ph="'+p+'">'+hqLbl(p)+'</button>';}).join('')+'</div>'
+   +(ph===ATT_KEY
+     ?'<div class="hq-att">'+ATT_ORDER.map(function(a){var A=ATT_STATUS[a];return '<button class="mj-gb" style="--gc:'+A.color+'" data-action="rl-save" data-k="'+esc(k)+'" data-att="'+a+'">'+A.label+'</button>';}).join('')+'</div>'
+     :'<label class="hq-pg"><span>M/S</span><input class="input" id="rl-page" inputmode="numeric" value="'+esc(pv)+'" placeholder="cth: 12 atau 12-14" data-k="'+esc(k)+'" aria-label="Muka surat"><em id="rl-auto">'+esc(pv?hqAutoTxt(pv):'')+'</em></label>'
+      +(GRADED[ph]?'<div class="hq-grades">'+GRADE_ORDER.map(function(gr){return '<button class="mj-gb" style="--gc:'+GRADES[gr].color+'" data-action="rl-save" data-k="'+esc(k)+'" data-grade="'+gr+'">'+GRADES[gr].label+'</button>';}).join('')+'</div>'
+       :'<button class="btn btn-primary btn-block" data-action="rl-save" data-k="'+esc(k)+'" style="margin-top:10px">'+svg(ICONS.check,16)+' Simpan '+PHASES[ph].label+'</button>'))
+   +(last?'<div class="hq-alt"><button class="btn btn-line sm" data-action="rl-undo" data-k="'+esc(k)+'">Batal rekod terakhir</button></div>':'')
+   +'<div class="mj-note">Rekod disimpan untuk '+esc(g.ownerName)+' dan akan masuk ke kelasnya secara automatik.</div></div>';
+ }
+ return h+'</div>';
+}
+function rlFind(k){var p=k.split('|'),g=((rlData&&rlData.groups)||[]).filter(function(x){return x.ownerId===p[0];})[0];return g?{g:g,x:g.students.filter(function(y){return y.id===p[1];})[0]}:null;}
+function rlSave(k,grade,att){
+ var F=rlFind(k);if(!F||!F.x)return;
+ var g=F.g,x=F.x,ph=rlPh[k],an,item,kind;
+ cmtWithMur(g.mur,function(){an=mjAnalyse(x,Date.now(),mjCfg());if(!ph)ph=hqDefaultPhase(x,an);});
+ if(att){kind='att';item={id:uid(),status:att};}
+ else{
+  var inp=document.getElementById('rl-page'),p=parsePages(inp?inp.value:(rlPg[k]||''));
+  if(!p){toast('Sila isi muka surat.',false);shake('rl-page');return;}
+  if(p.invalid){toast('Muka surat tidak sah (1 – 604).',false);shake('rl-page');return;}
+  kind='rec';item={id:uid(),phase:ph,start:p.start,end:p.end,ts:Date.now(),note:'Relief'};if(grade)item.grade=grade;
+ }
+ rlApi('reliefSave',{ownerId:g.ownerId,sid:x.id,d:todayKey(),kind:kind,item:item}).then(function(res){
+  if(res&&res.ok){
+   (rlDone[k]=rlDone[k]||[]).push({kind:kind,recId:item.id,item:res.item});
+   if(kind==='rec')x.records.push(res.item);else (x.attendance=x.attendance||[]).push(res.item);   // jadual murajaah dikemas kini serta-merta
+   delete rlPh[k];delete rlPg[k];
+   var nx=g.students.filter(function(y){return !(rlDone[g.ownerId+'|'+y.id]||[]).length;})[0];
+   rlOpen=nx?(g.ownerId+'|'+nx.id):null;
+   toast('Direkod untuk '+x.name.split(' ')[0]+' ('+g.ownerName+').',true);renderRelief();
+  }else toast(rlErrTxt(res),false);
+ }).catch(function(){toast('Tiada sambungan — rekod belum disimpan.',false);});
+}
+function rlUndo(k){
+ var F=rlFind(k),L=rlDone[k]||[],last=L[L.length-1];if(!F||!last)return;
+ rlApi('reliefDelete',{recId:last.recId}).then(function(res){
+  if(res&&res.ok){L.pop();F.x.records=F.x.records.filter(function(r){return r.id!==last.recId;});F.x.attendance=(F.x.attendance||[]).filter(function(a){return a.id!==last.recId;});toast('Rekod relief dibatalkan.',true);renderRelief();}
+  else toast(rlErrTxt(res),false);
+ }).catch(function(){toast('Tiada sambungan internet.',false);});
+}
+/* -- guru kelas: gabung rekod relief ke kelas sendiri -- */
+function rlMerge(){
+ if(!rlCan())return;
+ rlApi('reliefMine').then(function(res){
+  if(!res||!res.ok)return;
+  var seen={};(state.reliefSeen||[]).forEach(function(id){seen[id]=1;});
+  var n=0;
+  (res.entries||[]).forEach(function(e){
+   if(seen[e.recId])return;
+   var st=studentById(e.sid);if(!st)return;
+   var it=Object.assign({},e.item),by=(it.relief&&it.relief.name)||e.angkat||'guru angkat';
+   if(e.kind==='att'){st.attendance=st.attendance||[];if(!st.attendance.some(function(a){return a.id===it.id;})){it.note=(it.note?it.note+' · ':'')+'Relief: '+by;st.attendance.push(it);n++;}}
+   else{if(!st.records.some(function(r){return r.id===it.id;})){it.note='Relief: '+by+(it.note&&it.note!=='Relief'?' · '+it.note:'');it.at=Date.now();st.records.push(it);n++;}}
+   (state.reliefSeen=state.reliefSeen||[]).push(e.recId);seen[e.recId]=1;
+  });
+  if(n){saveState();renderAll();toast(n+' rekod relief daripada guru angkat telah dimasukkan ke kelas anda.',true);}
+  else if(res.entries&&res.entries.length)saveStateLocal();
+ }).catch(function(){});
+}
 
 /* ---------------- MOD HALAQAH (rekod pantas ikut tingkatan) ---------------- */
 var hqTk=null,hqOpen=null,hqPh={},hqPg={},hqDone={};   // hqDone[sid]={kind:'rec'|'att'|'skip',id,text}
